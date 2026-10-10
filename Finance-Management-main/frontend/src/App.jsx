@@ -41,6 +41,16 @@ const VIEWS = [
   { id: 'insights', label: 'AI Insights', icon: 'lightbulb' },
 ]
 
+const WELCOME_SLOGANS = [
+  'Small steps today can build stronger finances tomorrow.',
+  'Your goals are closer when your money has a plan.',
+  'Progress is a habit you can practice every day.',
+  'Make every mindful money choice count.',
+  'A clearer view of your money starts right here.',
+  'Build your future one thoughtful decision at a time.',
+  'You are in charge of the next step in your money story.',
+]
+
 export default function App() {
   const [screen, setScreen] = useState('landing') // landing | auth | app
   const [activeView, setActiveView] = useState('dashboard')
@@ -53,6 +63,9 @@ export default function App() {
     try { localStorage.setItem('finai-theme', t) } catch {}
   }, [])
   const [user, setUser] = useState(null)
+  const [welcomeSlogan, setWelcomeSlogan] = useState(() => {
+    try { return localStorage.getItem('finai-welcome-slogan') || WELCOME_SLOGANS[0] } catch { return WELCOME_SLOGANS[0] }
+  })
   const [toasts, setToasts] = useState([])
   const [uploadOpen, setUploadOpen] = useState(false)
   const [summary, setSummary] = useState({})
@@ -110,6 +123,15 @@ export default function App() {
     setScreen('landing')
   }, [])
 
+  const chooseWelcomeSlogan = useCallback(() => {
+    let previous = welcomeSlogan
+    try { previous = localStorage.getItem('finai-welcome-slogan') || previous } catch {}
+    const choices = WELCOME_SLOGANS.filter(slogan => slogan !== previous)
+    const next = choices[Math.floor(Math.random() * choices.length)]
+    setWelcomeSlogan(next)
+    try { localStorage.setItem('finai-welcome-slogan', next) } catch {}
+  }, [welcomeSlogan])
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
@@ -126,7 +148,7 @@ export default function App() {
     activeView, setActiveView,
     sidebarOpen, setSidebarOpen,
     theme, setTheme,
-    user, setUser, logout,
+    user, setUser, logout, welcomeSlogan, chooseWelcomeSlogan,
     toasts, addToast,
     uploadOpen, setUploadOpen,
     summary, transactions, categories, monthly,

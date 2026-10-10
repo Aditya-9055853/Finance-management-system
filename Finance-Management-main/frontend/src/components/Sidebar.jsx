@@ -18,55 +18,52 @@ const ICON_MAP = {
   lightbulb: Lightbulb,
 }
 
-/** Slim floating icon rail (left side), modelled on the Finexy dashboard. */
+const CORE_VIEWS = ['dashboard', 'chat', 'transactions', 'analytics']
+
 export default function Sidebar() {
-  const { views, activeView, setActiveView, logout, setUploadOpen, theme, setTheme } = useApp()
+  const { views, activeView, setActiveView, logout, setUploadOpen, theme, setTheme, user, transactions } = useApp()
+  const coreViews = views.filter(view => CORE_VIEWS.includes(view.id))
+  const tools = views.filter(view => !CORE_VIEWS.includes(view.id))
+
+  const renderView = view => {
+    const Icon = ICON_MAP[view.icon] || LayoutGrid
+    return (
+      <button
+        key={view.id}
+        className={`rail-btn ${activeView === view.id ? 'active' : ''}`}
+        onClick={() => setActiveView(view.id)}
+        aria-current={activeView === view.id ? 'page' : undefined}
+      >
+        <Icon size={18} />
+        <span>{view.label}</span>
+        {view.badge && <span className="rail-badge">{view.badge}</span>}
+        {view.id === 'transactions' && transactions.length > 0 && <span className="rail-count">{transactions.length}</span>}
+      </button>
+    )
+  }
 
   return (
     <aside className="rail">
-      <div className="rail-pill theme-toggle">
-        <button
-          className={`rail-btn ${theme === 'light' ? 'on' : ''}`}
-          onClick={() => setTheme('light')}
-          aria-label="Light theme"
-          data-tip="Light"
-        >
-          <Sun size={19} />
-        </button>
-        <button
-          className={`rail-btn ${theme === 'dark' ? 'on' : ''}`}
-          onClick={() => setTheme('dark')}
-          aria-label="Dark theme"
-          data-tip="Dark"
-        >
-          <Moon size={19} />
-        </button>
+      <div className="rail-brand"><span className="rail-brand-mark">F</span><span>Fin<em>AI</em></span></div>
+      <div className="rail-user">
+        <span className="rail-user-avatar">{user?.name?.[0]?.toUpperCase() || 'G'}</span>
+        <span className="rail-user-copy"><strong>{user?.name || 'Guest account'}</strong><small>Personal workspace</small></span>
       </div>
 
-      <nav className="rail-pill">
-        {views.map(v => {
-          const Icon = ICON_MAP[v.icon] || LayoutGrid
-          return (
-            <button
-              key={v.id}
-              className={`rail-btn ${activeView === v.id ? 'active' : ''}`}
-              onClick={() => setActiveView(v.id)}
-              aria-label={v.label}
-              data-tip={v.label}
-            >
-              <Icon size={20} />
-            </button>
-          )
-        })}
+      <nav className="rail-nav" aria-label="Main navigation">
+        <span className="rail-section-label">Workspace</span>
+        {coreViews.map(renderView)}
+        <span className="rail-section-label rail-section-tools">Money tools</span>
+        {tools.map(renderView)}
       </nav>
 
-      <div className="rail-pill grow">
-        <button className="rail-btn" onClick={() => setUploadOpen(true)} aria-label="Upload CSV" data-tip="Upload CSV">
-          <Upload size={19} />
-        </button>
-        <button className="rail-btn" onClick={logout} aria-label="Exit" data-tip="Log out">
-          <LogOut size={19} />
-        </button>
+      <div className="rail-footer">
+        <div className="rail-theme-toggle" aria-label="Color theme">
+          <button className={theme === 'light' ? 'selected' : ''} onClick={() => setTheme('light')} aria-label="Light theme" title="Light theme"><Sun size={16} /></button>
+          <button className={theme === 'dark' ? 'selected' : ''} onClick={() => setTheme('dark')} aria-label="Dark theme" title="Dark theme"><Moon size={16} /></button>
+        </div>
+        <button className="rail-footer-action" onClick={() => setUploadOpen(true)}><Upload size={16} /><span>Import transactions</span></button>
+        <button className="rail-footer-action" onClick={logout}><LogOut size={16} /><span>Sign out</span></button>
       </div>
     </aside>
   )

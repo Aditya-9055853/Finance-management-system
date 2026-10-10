@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useApp } from '../App'
 
 export default function AuthScreen() {
-  const { setScreen, setUser, addToast } = useApp()
+  const { setScreen, setUser, addToast, chooseWelcomeSlogan } = useApp()
   const [mode, setMode] = useState('login') // login | signup
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -26,6 +26,7 @@ export default function AuthScreen() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setError(data.error || 'Something went wrong. Please try again.'); return }
       setUser(data.user)
+      chooseWelcomeSlogan()
       addToast(`Welcome, ${data.user.name}!`, 'success')
       setScreen('app')
     } catch {

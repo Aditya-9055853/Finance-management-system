@@ -6,7 +6,7 @@ import os
 import traceback
 
 import pandas as pd
-from flask import Flask, request, jsonify, render_template, session, send_file
+from flask import Flask, request, jsonify, render_template, session, send_file, send_from_directory
 from flask_cors import CORS
 
 from config import Config
@@ -21,6 +21,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "finai-dev-secret-change-me")
 CORS(app, supports_credentials=True)
+FRONTEND_DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "dist")
 
 # ---------------------------------------------------------------------------
 # Database (SQLite): created automatically on first run -> FinAI/finai.db
@@ -201,7 +202,23 @@ def _validate_dataframe(df: pd.DataFrame):
 
 @app.route("/")
 def index():
+    # Prefer the React production build when it exists; keep the legacy page
+    # available as a fallback until the frontend has been built once.
+    react_index = os.path.join(FRONTEND_DIST, "index.html")
+    if os.path.isfile(react_index):
+        return send_from_directory(FRONTEND_DIST, "index.html")
     return render_template("index.html")
+
+
+@app.route("/<path:frontend_path>")
+def frontend_assets(frontend_path):
+    """Serve Vite assets and let React handle browser-side routes."""
+    if os.path.isdir(FRONTEND_DIST):
+        requested = os.path.join(FRONTEND_DIST, frontend_path)
+        if os.path.isfile(requested):
+            return send_from_directory(FRONTEND_DIST, frontend_path)
+        return send_from_directory(FRONTEND_DIST, "index.html")
+    return "Not found", 404
 
 
 # ---------------------------------------------------------------------------

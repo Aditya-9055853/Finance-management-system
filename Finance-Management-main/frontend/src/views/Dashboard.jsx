@@ -49,7 +49,7 @@ function Delta({ value, invert = false, hero = false, suffix }) {
 }
 
 export default function Dashboard() {
-  const { summary, transactions, categories, monthly, user, theme, setUploadOpen, setActiveView } = useApp()
+  const { summary, transactions, categories, monthly, user, theme, welcomeSlogan, setUploadOpen, setActiveView } = useApp()
   const C = chartColors(theme)
 
   const now = new Date()
@@ -114,7 +114,7 @@ export default function Dashboard() {
     <div className="view-panel">
       <div className="dash-hello bento-in" style={bento(0)}>
         <h1>{greeting}, {name}</h1>
-        <p>Stay on top of your money, monitor spending, and ask FinAI anything.</p>
+        <p className="dashboard-slogan">{welcomeSlogan || 'Stay on top of your money, monitor spending, and ask FinAI anything.'}</p>
       </div>
 
       <div className="dash-top">
@@ -224,7 +224,7 @@ export default function Dashboard() {
             <span className="badge badge-orange">{Object.keys(categories).length} categories</span>
           </div>
           <div className="chart-wrapper">
-            {topCats.length ? <Doughnut data={doughnutData} options={doughnutOptions} /> : <EmptyChart />}
+            {topCats.length ? <Doughnut data={doughnutData} options={doughnutOptions} /> : <EmptyChart onUpload={() => setUploadOpen(true)} />}
           </div>
         </div>
         <div className="chart-card bento-in" style={bento(7)}>
@@ -233,7 +233,7 @@ export default function Dashboard() {
             <span className="badge badge-orange">{monthly.length} months</span>
           </div>
           <div className="chart-wrapper">
-            {monthly.length ? <Line data={lineData} options={lineOptions} /> : <EmptyChart />}
+            {monthly.length ? <Line data={lineData} options={lineOptions} /> : <EmptyChart onUpload={() => setUploadOpen(true)} />}
           </div>
         </div>
       </div>
@@ -293,10 +293,13 @@ export default function Dashboard() {
   )
 }
 
-function EmptyChart() {
+function EmptyChart({ onUpload }) {
   return (
-    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-      No data available
+    <div className="empty-chart">
+      <span className="empty-chart-icon"><TrendingUp size={19} /></span>
+      <strong>Your chart starts with a transaction</strong>
+      <span>Import a CSV or add a transaction to see your trends.</span>
+      <button className="empty-chart-action" onClick={onUpload}><Upload size={14} /> Import a CSV</button>
     </div>
   )
 }

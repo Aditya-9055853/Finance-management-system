@@ -118,11 +118,22 @@ Without a key, the app still runs fully — the chat falls back to showing the r
 
 ## Running the Application
 
-To run everything with a single command (starts the server and automatically opens your browser):
+Build the React interface once (and again after frontend changes):
+
+```bash
+cd frontend
+npm ci
+npm run build
+cd ..
+```
+
+Then start the backend. It serves the React build and automatically opens your browser:
 
 ```bash
 python run.py
 ```
+
+For React development with hot reload, keep Flask running in one terminal and run `npm run dev` from `frontend` in a second terminal; open **http://localhost:5173**.
 
 Alternatively, you can run directly with Flask:
 ```bash
