@@ -11,6 +11,7 @@ import {
 import { useApp } from '../App'
 import { PALETTE, chartColors, alpha } from '../theme'
 import useCountUp from '../useCountUp'
+import FeatureNote from '../components/FeatureNote'
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler, BarElement)
 
@@ -114,8 +115,15 @@ export default function Dashboard() {
     <div className="view-panel">
       <div className="dash-hello bento-in" style={bento(0)}>
         <h1>{greeting}, {name}</h1>
-        <p className="dashboard-slogan">{welcomeSlogan || 'Stay on top of your money, monitor spending, and ask FinAI anything.'}</p>
+        <p className="dashboard-slogan">{welcomeSlogan || 'Stay on top of your money, monitor spending, and ask FinTrack anything.'}</p>
       </div>
+
+      <FeatureNote
+        slogan="Small money habits add up over time."
+        tip={topCats.length ? `Your largest recorded spending category is ${topCats[0][0]} at ${fmt(topCats[0][1])}. Review the related transactions before changing your budget.` : 'Import a bank statement or add transactions to unlock spending patterns and monthly comparisons.'}
+        actionLabel={topCats.length ? 'Open transactions' : 'Import records'}
+        onAction={() => topCats.length ? setActiveView('transactions') : setUploadOpen(true)}
+      />
 
       <div className="dash-top">
         {/* ---- Total balance ---- */}

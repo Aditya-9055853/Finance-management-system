@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Target } from 'lucide-react'
+import FeatureNote from '../components/FeatureNote'
 
 function fmt(v) { return '₹' + (Number(v) || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 }) }
 
@@ -74,6 +75,13 @@ export default function SavingsGoal() {
           ))}
         </div>
       )}
+      {result && <FeatureNote
+        tone={result.is_currently_on_track ? 'slogan' : 'tip'}
+        slogan={result.is_currently_on_track ? 'A steady pace can make the goal feel smaller.' : 'A timeline is a planning choice you can change.'}
+        tip={result.is_currently_on_track
+          ? `Your recorded average monthly savings capacity exceeds the required ${fmt(result.required_monthly_saving)}. That historical average can change; check it against upcoming expenses before committing.`
+          : `The current estimate is short by ${fmt(Math.abs(result.savings_gap))} per month. Try a longer timeline or lower target, then compare the new monthly amount with your budget.`}
+      />}
     </div>
   )
 }

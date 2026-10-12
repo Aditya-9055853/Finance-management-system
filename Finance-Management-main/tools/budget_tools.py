@@ -21,6 +21,7 @@ def calculate_category_budget_status(df: pd.DataFrame, category: str, budget_amo
         "budget": round(float(budget_amount), 2),
         "actual": actual,
         "remaining": remaining,
+        "pct_used": round((actual / budget_amount) * 100, 2) if budget_amount > 0 else 0.0,
         "status": status,
     }
 

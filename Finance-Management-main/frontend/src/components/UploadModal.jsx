@@ -54,7 +54,7 @@ export default function UploadModal({ onClose }) {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <div className="modal-header">
-          <h3>Upload Transaction CSV</h3>
+          <h3>Replace transaction data with CSV</h3>
           <button className="btn-icon" onClick={onClose}><X size={16} /></button>
         </div>
         <div className="modal-body">
@@ -71,6 +71,7 @@ export default function UploadModal({ onClose }) {
             <input ref={fileRef} type="file" accept=".csv" hidden onChange={e => handleFile(e.target.files[0])} />
           </label>
           {status && <div className={`upload-status ${statusType}`}>{status}</div>}
+          <div className="statement-upload-note"><strong>Have a bank statement?</strong><span>In Transactions, choose <em>Import bank statement</em> to append common bank CSV exports without replacing existing records.</span></div>
           <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
             <button className="btn-ghost" style={{ flex: 1 }} onClick={handleReset} disabled={loading}>
               Revert to Sample Data

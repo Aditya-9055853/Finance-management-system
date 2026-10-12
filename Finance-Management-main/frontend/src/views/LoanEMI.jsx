@@ -1,24 +1,29 @@
 import React, { useState } from 'react'
+import { useApp } from '../App'
+import FeatureNote from '../components/FeatureNote'
 
 function fmt(v) { return '₹' + (Number(v) || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 }) }
 
 export default function LoanEMI() {
+  const { monthly } = useApp()
   const [principal, setPrincipal] = useState('')
   const [rate, setRate] = useState('')
   const [tenure, setTenure] = useState('')
+  const [monthlyIncome, setMonthlyIncome] = useState('')
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
 
   const calcEMI = () => {
     setError('')
     const p = +principal, r = +rate / 12 / 100, n = +tenure * 12
-    if (!p || !rate || !tenure || p <= 0 || +rate <= 0 || +tenure <= 0) {
-      setError('Please fill all fields with positive values.'); return
+    if (!p || rate === '' || !tenure || p <= 0 || +rate < 0 || +tenure <= 0 || (monthlyIncome && +monthlyIncome <= 0)) {
+      setError('Enter a positive loan and tenure, a non-negative interest rate, and a valid optional income.'); return
     }
     const emi = r === 0 ? p / n : (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
     const totalPayable = emi * n
     const totalInterest = totalPayable - p
-    setResult({ emi, totalPayable, totalInterest, n })
+    const referenceIncome = Number(monthlyIncome) || Number(monthly.at(-1)?.income) || 0
+    setResult({ emi, totalPayable, totalInterest, n, emiShare: referenceIncome ? (emi / referenceIncome) * 100 : null })
   }
 
   return (
@@ -29,6 +34,7 @@ export default function LoanEMI() {
           <p>Standard reducing-balance EMI formula with income affordability check.</p>
         </div>
       </div>
+      <FeatureNote tone="slogan" slogan="Borrow with the full monthly picture in view." tip="Compare the EMI with existing loan payments, essential expenses, and the total interest—not just the advertised rate." />
       <div className="panel">
         <div className="panel-header"><h3>EMI Details</h3></div>
         <div className="panel-body">
@@ -37,6 +43,7 @@ export default function LoanEMI() {
             <label>Loan Amount (₹)<input type="number" value={principal} onChange={e => setPrincipal(e.target.value)} placeholder="500000" /></label>
             <label>Interest Rate (% p.a.)<input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="9.5" step="0.01" /></label>
             <label>Tenure (Years)<input type="number" value={tenure} onChange={e => setTenure(e.target.value)} placeholder="5" step="0.5" /></label>
+            <label>Monthly take-home (optional)<input type="number" min="1" value={monthlyIncome} onChange={e => setMonthlyIncome(e.target.value)} placeholder={monthly.at(-1)?.income ? String(Math.round(monthly.at(-1).income)) : 'Enter monthly income'} /></label>
           </div>
           <button className="btn-primary" onClick={calcEMI}>Calculate EMI</button>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
@@ -53,8 +60,10 @@ export default function LoanEMI() {
           <div className="result-row"><span>Principal Amount</span><strong style={{ color: 'var(--green)' }}>{fmt(+principal)}</strong></div>
           <div className="result-row"><span>Total Interest</span><strong style={{ color: 'var(--red)' }}>{fmt(result.totalInterest)}</strong></div>
           <div className="result-row"><span>Interest-to-Principal Ratio</span><strong>{((result.totalInterest / +principal) * 100).toFixed(1)}%</strong></div>
+          {result.emiShare !== null && <div className="result-row"><span>EMI as share of reference monthly income</span><strong>{result.emiShare.toFixed(1)}%</strong></div>}
         </div>
       )}
+      {result && <FeatureNote slogan="A calculator gives a starting point, not a lender’s offer." tip="Actual EMI can change with fees, compounding, rate resets, insurance, and lender terms. Confirm the final repayment schedule with the lender." />}
     </div>
   )
 }

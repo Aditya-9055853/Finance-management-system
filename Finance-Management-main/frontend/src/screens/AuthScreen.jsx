@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useApp } from '../App'
 
 export default function AuthScreen() {
@@ -7,8 +7,22 @@ export default function AuthScreen() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [introVisible, setIntroVisible] = useState(true)
+  const [introLeaving, setIntroLeaving] = useState(false)
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const introDuration = reducedMotion ? 300 : 1900
+    const leaveTimer = window.setTimeout(() => setIntroLeaving(true), introDuration - 550)
+    const finishTimer = window.setTimeout(() => setIntroVisible(false), introDuration)
+    return () => {
+      window.clearTimeout(leaveTimer)
+      window.clearTimeout(finishTimer)
+    }
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -44,19 +58,40 @@ export default function AuthScreen() {
 
   return (
     <div className="auth-screen">
-      <div className="auth-illustration" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 24 }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 64, marginBottom: 12 }}>₹</div>
-          <h2 style={{ fontSize: 26, fontWeight: 800, marginBottom: 8 }}>FinAI Personal Finance</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Grounded AI & deterministic intelligence</p>
+      {introVisible && <div className={`login-intro ${introLeaving ? 'is-leaving' : ''}`} role="status" aria-label="FinTrack is starting">
+        <div className="login-intro-halo" />
+        <div className="login-intro-content">
+          <span className="login-intro-kicker">YOUR MONEY, IN FOCUS</span>
+          <h1 className="login-intro-title"><span>FinTrack</span></h1>
+          <p className="login-intro-subtitle">Make every move count.</p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280 }}>
-          {['Track income & expenses', 'AI-powered insights', 'Budget & goal planners', 'Live currency converter'].map(f => (
-            <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-secondary)', fontSize: 13 }}>
-              <span style={{ color: 'var(--green)' }}>✓</span> {f}
-            </div>
-          ))}
+        <div className="login-intro-coins" aria-hidden="true">
+          <i className="intro-coin intro-coin-one">₹</i>
+          <i className="intro-coin intro-coin-two">₹</i>
+          <i className="intro-coin intro-coin-three">₹</i>
+          <i className="intro-coin intro-coin-four">₹</i>
+          <i className="intro-coin intro-coin-five">₹</i>
         </div>
+        <div className="login-intro-floor" />
+      </div>}
+      <div className="auth-illustration">
+        <div className="auth-scene-copy">
+          <span className="auth-scene-kicker">YOUR MONEY, IN FOCUS</span>
+          <h1>Make every<br /><em>move count.</em></h1>
+          <p>One clear view for your spending, savings, and next steps.</p>
+        </div>
+        <div className="auth-3d-stage" aria-hidden="true">
+          <div className="auth-stage-glow" />
+          <div className="auth-orb"><span>₹</span><i /><b /></div>
+          <div className="auth-coin auth-coin-a">₹</div>
+          <div className="auth-coin auth-coin-b">₹</div>
+          <div className="auth-coin auth-coin-c">₹</div>
+          <div className="auth-float-card auth-float-card-back"><span>MONTHLY SAVINGS</span><strong>+12.8%</strong><i /></div>
+          <div className="auth-float-card auth-float-card-front"><span className="auth-mini-icon">↗</span><span>Spending insight</span><strong>You're on track</strong><i><b /></i></div>
+          <div className="auth-stage-ring auth-stage-ring-a" />
+          <div className="auth-stage-ring auth-stage-ring-b" />
+        </div>
+        <div className="auth-illustration-footer"><span className="auth-footer-dot" />A smarter view of your finances</div>
       </div>
 
       <div className="auth-form-side">
@@ -67,7 +102,7 @@ export default function AuthScreen() {
                 <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
               </svg>
             </div>
-            <span className="auth-logo-name">Fin<em>AI</em></span>
+            <span className="auth-logo-name">Fin<em>Track</em></span>
           </div>
 
           <h2>{mode === 'login' ? 'Welcome back' : 'Create account'}</h2>
@@ -78,17 +113,22 @@ export default function AuthScreen() {
           <form onSubmit={handleSubmit}>
             {mode === 'signup' && (
               <div className="auth-form-group">
-                <label>Name</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
+                <label htmlFor="auth-name">Name</label>
+                <input id="auth-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoComplete="name" />
               </div>
             )}
             <div className="auth-form-group">
-              <label>Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+              <label htmlFor="auth-email">Email</label>
+              <input id="auth-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
             </div>
             <div className="auth-form-group">
-              <label>Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+              <label htmlFor="auth-password">Password</label>
+              <div className="auth-password-field">
+                <input id="auth-password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+                <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(visible => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}>
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
             <button type="submit" className="btn-primary" style={{ width: '100%', padding: '11px', marginTop: 4 }} disabled={loading}>
               {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create Account'}
@@ -96,7 +136,7 @@ export default function AuthScreen() {
           </form>
 
           <div className="auth-divider"><span>or</span></div>
-          <button className="btn-ghost" style={{ width: '100%', padding: '11px' }} onClick={handleGuest}>
+          <button type="button" className="btn-ghost" style={{ width: '100%', padding: '11px' }} onClick={handleGuest}>
             Continue as Guest (No Login)
           </button>
 

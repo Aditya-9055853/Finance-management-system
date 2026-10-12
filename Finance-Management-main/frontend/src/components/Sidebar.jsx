@@ -44,7 +44,7 @@ export default function Sidebar() {
 
   return (
     <aside className="rail">
-      <div className="rail-brand"><span className="rail-brand-mark">F</span><span>Fin<em>AI</em></span></div>
+      <div className="rail-brand"><span className="rail-brand-mark">F</span><span>Fin<em>Track</em></span></div>
       <div className="rail-user">
         <span className="rail-user-avatar">{user?.name?.[0]?.toUpperCase() || 'G'}</span>
         <span className="rail-user-copy"><strong>{user?.name || 'Guest account'}</strong><small>Personal workspace</small></span>

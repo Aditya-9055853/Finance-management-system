@@ -53,15 +53,15 @@
 }
 
 [data-theme="dark"] {
-  --bg-primary: #0f0f11;
-  --bg-secondary: #16161a;
-  --bg-card: #1c1c22;
-  --bg-card-hover: #23232b;
-  --bg-sidebar: #1c1c22;
-  --bg-tile: #16161a;
-  --border: #2a2a35;
-  --border-subtle: #22222b;
-  --track: #2a2a35;
+  --bg-primary: #050608;
+  --bg-secondary: #0a0c10;
+  --bg-card: #0e1015;
+  --bg-card-hover: #151820;
+  --bg-sidebar: #08090c;
+  --bg-tile: #111319;
+  --border: #242832;
+  --border-subtle: #191d25;
+  --track: #292e39;
 
   --accent: #f2571d;
   --accent-light: #ff7a45;
@@ -80,15 +80,15 @@
   --blue-dim: rgba(96, 165, 250, 0.13);
 
   --text-primary: #f0f0f4;
-  --text-secondary: #9898a8;
-  --text-muted: #5c5c70;
+  --text-secondary: #a7adbb;
+  --text-muted: #7d8493;
 
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
 
-  --chart-grid: #23232b;
-  --chart-tick: #5c5c70;
-  --chart-legend: #9898a8;
+  --chart-grid: #20242c;
+  --chart-tick: #8991a1;
+  --chart-legend: #b0b7c5;
 
   color-scheme: dark;
 }

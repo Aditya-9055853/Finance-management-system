@@ -4,6 +4,7 @@ Flask backend: API routes, SQLite storage, auth, and wiring together the agent, 
 """
 import os
 import traceback
+import re
 
 import pandas as pd
 from flask import Flask, request, jsonify, render_template, session, send_file, send_from_directory
@@ -353,6 +354,116 @@ def upload_csv():
         return jsonify({"error": "An unexpected error occurred while processing the upload."}), 500
 
 
+@app.route("/api/import-bank-statement", methods=["POST"])
+def import_bank_statement():
+    """Append transactions from a common bank statement CSV format."""
+    try:
+        user = _current_user()
+        file = request.files.get("file")
+        if file is None or not file.filename:
+            return jsonify({"error": "Choose a bank statement CSV file first."}), 400
+        if not file.filename.lower().endswith(".csv"):
+            return jsonify({"error": "Only .csv bank statements are supported."}), 400
+
+        try:
+            statement = pd.read_csv(file)
+        except Exception:
+            return jsonify({"error": "Could not read this CSV. Check that it is a valid bank statement export."}), 400
+        statement.columns = [re.sub(r"[^a-z0-9]+", "_", str(c).strip().lower()).strip("_") for c in statement.columns]
+        cols = set(statement.columns)
+
+        def find_column(*names):
+            return next((name for name in names if name in cols), None)
+
+        date_col = find_column("date", "transaction_date", "txn_date", "posting_date", "value_date", "value_dt")
+        desc_col = find_column("description", "narration", "narrations", "particulars", "transaction_details", "remarks", "details")
+        amount_col = find_column("amount", "transaction_amount")
+        debit_col = find_column("debit", "withdrawal", "withdrawals", "debit_amount", "withdrawal_amount", "withdrawal_amt")
+        credit_col = find_column("credit", "deposit", "deposits", "credit_amount", "deposit_amount", "deposit_amt")
+        type_col = find_column("type", "transaction_type", "dr_cr")
+        category_col = find_column("category")
+
+        if not date_col or not desc_col or not (amount_col or debit_col or credit_col):
+            return jsonify({
+                "error": "Required columns not found. Include Date, Description or Narration, and Amount or Debit/Credit columns.",
+                "columns": list(statement.columns),
+            }), 400
+        if statement.empty:
+            return jsonify({"error": "This statement has no transactions."}), 400
+
+        def money(value):
+            if pd.isna(value) or str(value).strip() == "":
+                return 0.0
+            raw = str(value).strip().replace(",", "")
+            negative = raw.startswith("(") and raw.endswith(")")
+            raw = re.sub(r"[^0-9.\-]", "", raw.strip("()"))
+            try:
+                result = float(raw)
+                return -abs(result) if negative else result
+            except ValueError:
+                return 0.0
+
+        rows = []
+        invalid = 0
+        for _, item in statement.iterrows():
+            parsed_date = pd.to_datetime(item.get(date_col), errors="coerce")
+            description = str(item.get(desc_col, "")).strip()
+            if pd.isna(parsed_date) or not description or description.lower() == "nan":
+                invalid += 1
+                continue
+
+            if debit_col or credit_col:
+                debit = abs(money(item.get(debit_col))) if debit_col else 0.0
+                credit = abs(money(item.get(credit_col))) if credit_col else 0.0
+                if debit > 0 and credit > 0:
+                    invalid += 1
+                    continue
+                txn_type, amount = ("income", credit) if credit > 0 else ("expense", debit)
+            else:
+                raw_amount = money(item.get(amount_col))
+                raw_type = str(item.get(type_col, "")).strip().lower() if type_col else ""
+                txn_type = "income" if raw_type in ("income", "credit", "cr") else "expense"
+                if raw_type not in ("income", "credit", "cr", "expense", "debit", "dr"):
+                    txn_type = "income" if raw_amount > 0 else "expense"
+                amount = abs(raw_amount)
+
+            if amount <= 0:
+                invalid += 1
+                continue
+            category = str(item.get(category_col, "Uncategorized")).strip() if category_col else "Uncategorized"
+            if not category or category.lower() == "nan":
+                category = "Uncategorized"
+            rows.append({"date": parsed_date.to_pydatetime(), "description": description[:255],
+                         "category": category[:80], "type": txn_type, "amount": round(amount, 2)})
+
+        if not rows:
+            return jsonify({"error": "No valid transactions found. Check the dates and amount columns.", "skipped": invalid}), 400
+
+        existing = {(r.date.strftime("%Y-%m-%d"), r.description.strip().lower(), r.type, round(r.amount, 2))
+                    for r in Transaction.query.filter_by(user_id=user.id).all()}
+        added = []
+        duplicates = 0
+        for row in rows:
+            key = (row["date"].strftime("%Y-%m-%d"), row["description"].strip().lower(), row["type"], row["amount"])
+            if key in existing:
+                duplicates += 1
+                continue
+            existing.add(key)
+            added.append(Transaction(user_id=user.id, **row))
+
+        if added:
+            db.session.add_all(added)
+            if user.data_source == "empty":
+                user.data_source = "bank"
+            db.session.commit()
+        return jsonify({"message": f"Imported {len(added)} bank transactions.", "added": len(added),
+                        "duplicates": duplicates, "skipped": invalid}), 200
+    except Exception:
+        db.session.rollback()
+        traceback.print_exc()
+        return jsonify({"error": "Could not import this bank statement."}), 500
+
+
 @app.route("/api/clear-data", methods=["POST"])
 def clear_data():
     try:
@@ -531,13 +642,20 @@ def budget_status():
         df = _df_for(user)
         payload = request.get_json(force=True) or {}
         budgets = payload.get("budgets", {})
+        month = str(payload.get("month", "")).strip()
         if df.empty:
             return jsonify({"error": "No transaction data is loaded."}), 400
         if not budgets:
             return jsonify({"error": "No budgets were provided."}), 400
+        if month:
+            if not re.fullmatch(r"\d{4}-\d{2}", month):
+                return jsonify({"error": "Month must use YYYY-MM format."}), 400
+            df = df[df["date"].dt.to_period("M").astype(str) == month]
+            if df.empty:
+                return jsonify({"error": f"No transactions were found for {month}."}), 400
         _save_budgets(user.id, budgets)  # saved so the autonomous monitor and next visit can use it
         results = budget_tools.calculate_budget_status(df, budgets)
-        return jsonify({"results": results})
+        return jsonify({"results": results, "month": month or None})
     except Exception:
         db.session.rollback()
         traceback.print_exc()

@@ -6,6 +6,7 @@ import {
 } from 'chart.js'
 import { useApp } from '../App'
 import { PALETTE, chartColors, alpha } from '../theme'
+import FeatureNote from '../components/FeatureNote'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler, Tooltip, Legend)
 
@@ -57,6 +58,11 @@ export default function Analytics() {
   const topCat = catEntries[0]?.[0] || '—'
   const avgExp = monthly.length ? fmt(monthly.reduce((s, m) => s + m.expenses, 0) / monthly.length) : '—'
   const bestMonth = monthly.length ? monthly.reduce((best, m) => ((m.income - m.expenses) > (best.income - best.expenses) ? m : best), monthly[0])?.month : '—'
+  const latestMonth = monthly.at(-1)
+  const previousMonth = monthly.at(-2)
+  const expenseChange = latestMonth && previousMonth && Number(previousMonth.expenses) > 0
+    ? ((Number(latestMonth.expenses) - Number(previousMonth.expenses)) / Number(previousMonth.expenses)) * 100
+    : null
 
   return (
     <div className="view-panel">
@@ -66,6 +72,11 @@ export default function Analytics() {
           <p>Historical trends, savings efficiency, and category expenditure shares.</p>
         </div>
       </div>
+
+      <FeatureNote
+        slogan="Let the trend guide your next question."
+        tip={expenseChange == null ? 'Import records from at least two months to compare your spending trend.' : `Recorded expenses ${expenseChange > 0 ? 'rose' : expenseChange < 0 ? 'fell' : 'stayed level'} ${Math.abs(expenseChange).toFixed(1)}% from ${previousMonth.month} to ${latestMonth.month}. Review category totals to see what moved.`}
+      />
 
       <div className="chart-grid">
         <div className="chart-card">

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { ArrowUpRight, BookOpen, ChartNoAxesColumnIncreasing, CircleHelp, Landmark, ShieldCheck, TrendingUp, Upload } from 'lucide-react'
 import { useApp } from '../App'
+import FeatureNote from '../components/FeatureNote'
 
 function fmt(v) { return '₹' + (Number(v) || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 }) }
 
@@ -36,22 +37,27 @@ export default function Investment() {
 
   const calcGrowth = () => {
     setError('')
-    const principal = Number(amount), annualRate = Number(rate) / 100, duration = Number(years)
+    const principal = Number(amount), duration = Number(years)
     if (!principal || rate === '' || years === '' || principal <= 0 || Number(rate) < 0 || duration <= 0) {
       setError('Enter a positive amount and duration, and a hypothetical return of zero or more.'); return
     }
-    if (mode === 'sip') {
-      const monthlyRate = annualRate / 12
-      const installments = duration * 12
-      const invested = principal * installments
-      const maturity = monthlyRate === 0
-        ? invested
-        : principal * (Math.pow(1 + monthlyRate, installments) - 1) / monthlyRate * (1 + monthlyRate)
-      setResult({ maturity, invested, gains: maturity - invested })
-    } else {
-      const maturity = principal * Math.pow(1 + annualRate, duration)
-      setResult({ maturity, invested: principal, gains: maturity - principal })
+    const calculate = yearlyRate => {
+      const safeRate = Math.max(0, yearlyRate) / 100
+      if (mode === 'sip') {
+        const monthlyRate = safeRate / 12
+        const installments = duration * 12
+        const invested = principal * installments
+        const maturity = monthlyRate === 0
+          ? invested
+          : principal * (Math.pow(1 + monthlyRate, installments) - 1) / monthlyRate * (1 + monthlyRate)
+        return { maturity, invested, gains: maturity - invested }
+      }
+      const maturity = principal * Math.pow(1 + safeRate, duration)
+      return { maturity, invested: principal, gains: maturity - principal }
     }
+    const lowRate = Math.max(0, Number(rate) - 2)
+    const highRate = Number(rate) + 2
+    setResult({ ...calculate(Number(rate)), low: calculate(lowRate), high: calculate(highRate), lowRate, baseRate: Number(rate), highRate })
   }
 
   const maxSurplus = Math.max(1, ...history.rows.map(row => Math.abs(row.surplus)))
@@ -90,7 +96,7 @@ export default function Investment() {
             <p className="investment-footnote">*Median surplus among positive months, using up to the latest 6 months of transactions. This describes cash flow only; it is not an investment budget or a prediction.</p>
           </>
         ) : (
-          <div className="investment-no-data"><span className="empty-chart-icon"><ChartNoAxesColumnIncreasing size={19} /></span><div><strong>Add transaction history for a cash-flow review</strong><p>FinAI can summarize income and expenses here. It does not have stock, bond, or portfolio price history.</p></div></div>
+          <div className="investment-no-data"><span className="empty-chart-icon"><ChartNoAxesColumnIncreasing size={19} /></span><div><strong>Add transaction history for a cash-flow review</strong><p>FinTrack can summarize income and expenses here. It does not have stock, bond, or portfolio price history.</p></div></div>
         )}
       </section>
 
@@ -110,6 +116,8 @@ export default function Investment() {
         </div>
         <p className="investment-disclaimer">This app does not recommend specific stocks, bonds, or funds. Your transaction history is not investment-performance data. Past performance does not predict future results; investment values can fall as well as rise. <a href="https://investor.sebi.gov.in/pdf/reference-material/MFunds.pdf" target="_blank" rel="noreferrer">SEBI investor guidance</a></p>
       </section>
+
+      <FeatureNote tone="slogan" slogan="A range of outcomes is more useful than one neat number." tip="The scenario comparison below varies your assumed annual return by two percentage points in either direction. It is a sensitivity check, not a prediction of market returns." />
 
       <section className="panel sip-calculator">
         <div className="panel-header"><div><h3>Growth scenario calculator</h3><p>Explore a hypothetical rate; it is not a forecast.</p></div></div>
@@ -141,6 +149,12 @@ export default function Investment() {
           <div className="result-row"><span>Projected value</span><strong style={{ color: 'var(--accent)', fontSize: 18 }}>{fmt(result.maturity)}</strong></div>
           <div className="result-row"><span>Total contributions</span><strong style={{ color: 'var(--green)' }}>{fmt(result.invested)}</strong></div>
           <div className="result-row"><span>Illustrative growth</span><strong style={{ color: 'var(--blue)' }}>{fmt(result.gains)}</strong></div>
+          <div className="scenario-range">
+            <h5>Rate sensitivity · {mode === 'sip' ? 'monthly contribution' : 'one-time amount'}</h5>
+            <div><span>Lower case · {result.lowRate.toFixed(1)}%</span><strong>{fmt(result.low.maturity)}</strong></div>
+            <div><span>Your case · {result.baseRate.toFixed(1)}%</span><strong>{fmt(result.maturity)}</strong></div>
+            <div><span>Higher case · {result.highRate.toFixed(1)}%</span><strong>{fmt(result.high.maturity)}</strong></div>
+          </div>
           <div className="investment-disclaimer">A mathematical illustration only. It does not identify suitable investments or estimate what a real investment will earn.</div>
         </div>
       )}

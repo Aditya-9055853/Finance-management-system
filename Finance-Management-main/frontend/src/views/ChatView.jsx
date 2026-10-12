@@ -27,12 +27,19 @@ const QUICK = [
 ]
 
 export default function ChatView() {
-  const { } = useApp()
+  const { transactions, categories } = useApp()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
+  const topCategory = Object.entries(categories).sort((a, b) => b[1] - a[1])[0]?.[0]
+  const quickQuestions = [
+    ...QUICK.slice(0, 5),
+    ...(topCategory ? [{ label: `Review ${topCategory}`, query: `Show my ${topCategory} transactions and compare spending across available months.` }] : []),
+    { label: 'Find recurring charges', query: 'Look for repeated transaction descriptions that may be subscriptions or regular bills.' },
+    { label: 'Summarize a statement', query: 'Summarize my latest month: income, expenses, net, largest expense, and top categories.' },
+  ]
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -81,7 +88,7 @@ export default function ChatView() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div className="chat-avatar">✦</div>
           <div className="chat-title-wrap">
-            <h3>Ask FinAI</h3>
+            <h3>Ask FinTrack</h3>
             <p>Your AI personal finance assistant — grounded in your data</p>
           </div>
         </div>
@@ -97,10 +104,11 @@ export default function ChatView() {
             <div className="msg-avatar">✦</div>
             <div>
               <div className="msg-bubble">
-                <p><strong>FinAI</strong> — Your Intelligent Personal Finance Assistant</p>
+                <p><strong>FinTrack</strong> — Your personal finance assistant</p>
                 <p>Ask anything about your income, spending, savings rate, budgets, or finance concepts. All calculations run deterministically with Python/pandas.</p>
+                <p className="chat-guidance">{transactions.length ? `Tip: ask for a time period and comparison. ${transactions.length} transactions are loaded.` : 'Tip: import a statement first, then ask for a time period and comparison.'}</p>
                 <div className="quick-chips">
-                  {QUICK.map(q => (
+                  {quickQuestions.map(q => (
                     <button key={q.label} className="chip" onClick={() => send(q.query)}>{q.label}</button>
                   ))}
                 </div>
@@ -134,7 +142,7 @@ export default function ChatView() {
             <div className="msg-bubble" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                 <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
-                <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>FinAI is thinking…</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>FinTrack is thinking…</span>
               </div>
             </div>
           </div>
@@ -150,7 +158,7 @@ export default function ChatView() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Ask FinAI anything about your finances…"
+            placeholder="Ask FinTrack anything about your finances…"
             rows={1}
             style={{ flex: 1, resize: 'none', minHeight: 44, maxHeight: 120, borderRadius: 12, padding: '10px 14px', fontSize: 14 }}
           />

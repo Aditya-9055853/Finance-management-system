@@ -4,7 +4,7 @@ import { useApp } from '../App'
 
 const FEATURES = [
   { icon: BarChart2, title: 'Real Analytics', desc: 'Category spending, savings rate, and monthly cashflow trends in interactive charts.' },
-  { icon: Zap, title: 'FinAI Assistant', desc: 'Ask anything about your finances. Powered by Gemini AI with deterministic Python tools.' },
+  { icon: Zap, title: 'FinTrack Assistant', desc: 'Ask anything about your finances. Powered by Gemini AI with deterministic Python tools.' },
   { icon: DollarSign, title: 'Budget & Goal Planners', desc: 'Set targets per category and calculate your path to savings milestones.' },
   { icon: TrendingUp, title: 'EMI & SIP Calculators', desc: 'Reducing-balance EMI, SIP compound growth, and live currency converter.' },
 ]
@@ -15,16 +15,16 @@ export default function Landing() {
   return (
     <div className="landing">
       <nav className="landing-nav">
-        <span className="landing-brand">Fin<em>AI</em></span>
+        <span className="landing-brand">Fin<em>Track</em></span>
         <div className="landing-nav-actions">
           <button className="btn-ghost" onClick={() => setScreen('auth')}>Log In</button>
-          <button className="btn-primary" onClick={() => setScreen('app')}>Launch App →</button>
+          <button className="btn-primary" onClick={() => setScreen('auth')}>Get started</button>
         </div>
       </nav>
 
       <section className="landing-hero">
         <div>
-          <span className="landing-eyebrow">✦ Smart Personal Finance & AI</span>
+          <span className="landing-eyebrow">✦ Smart personal finance</span>
           <h1>Accelerate your <span className="accent">financial clarity.</span></h1>
           <p>Track income and expenses, set monthly budgets, monitor trends, and converse with an intelligent AI assistant grounded in your real financial data.</p>
           <div className="landing-hero-actions">
@@ -44,24 +44,25 @@ export default function Landing() {
         </div>
 
         <div className="landing-visual">
-          <div className="vcard">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.1em' }}>FINAI</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>PLATINUM</div>
-              </div>
-              <div className="vcard-chip" />
+          <div className="wallet-scene" role="img" aria-label="An animated wallet tossing coins">
+            <div className="wallet-orbit wallet-orbit-one" />
+            <div className="wallet-orbit wallet-orbit-two" />
+            <span className="wallet-coin coin-one">₹</span>
+            <span className="wallet-coin coin-two">₹</span>
+            <span className="wallet-coin coin-three">₹</span>
+            <span className="wallet-coin coin-four">₹</span>
+            <span className="wallet-coin coin-five">₹</span>
+            <div className="wallet-shadow" />
+            <div className="wallet-back" />
+            <div className="wallet-body">
+              <span className="wallet-brand-mark">F</span>
+              <span className="wallet-stitch" />
+              <span className="wallet-pocket" />
+              <span className="wallet-clasp"><i /></span>
             </div>
-            <div>
-              <div className="vcard-balance-label">TOTAL BALANCE</div>
-              <div className="vcard-balance">₹84,635.00</div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div className="vcard-number">•••• •••• •••• 8824</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>EXP 12/29</div>
-            </div>
+            <div className="wallet-caption"><strong>Money in motion</strong><span>Every choice adds up.</span></div>
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="landing-float-row">
             <div className="float-card">
               <div className="float-card-dot" style={{ background: 'var(--green)' }} />
               <div>
