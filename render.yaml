@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: finai
+    runtime: python
+    rootDir: Finance-Management-main
+    buildCommand: pip install -r requirements.txt && cd frontend && npm ci && npm run build
+    startCommand: gunicorn --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT app:app
+    healthCheckPath: /api/status
+    disk:
+      name: finai-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATA_DIR
+        value: /var/data
+      - key: DATABASE_URL
+        value: sqlite:////var/data/finai.db
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: GEMINI_API_KEY
+        sync: false
