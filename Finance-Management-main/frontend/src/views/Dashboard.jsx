@@ -1,302 +1,197 @@
 import React from 'react'
 import {
   TrendingUp, TrendingDown, Percent, Wallet, ArrowUpRight, ArrowDownRight,
-  Plus, Upload, ChevronDown, Layers,
+  Plus, Upload,
 } from 'lucide-react'
 import { Doughnut, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend,
-  CategoryScale, LinearScale, PointElement, LineElement, Filler, BarElement
+  CategoryScale, LinearScale, PointElement, LineElement, Filler,
 } from 'chart.js'
 import { useApp } from '../App'
 import { PALETTE, chartColors, alpha } from '../theme'
 import useCountUp from '../useCountUp'
-import FeatureNote from '../components/FeatureNote'
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler, BarElement)
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler)
 
-function fmt(v) { return '₹' + (Number(v) || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 }) }
-function fmtPct(v) { return (Number(v) || 0).toFixed(1) + '%' }
+function fmt(value) {
+  return '₹' + (Number(value) || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })
+}
 
-/** % change between the last two months of a series (null if not enough data). */
+function fmtPct(value) {
+  return (Number(value) || 0).toFixed(1) + '%'
+}
+
 function monthDelta(monthly, pick) {
   if (!monthly || monthly.length < 2) return null
-  const cur = Number(pick(monthly[monthly.length - 1])) || 0
-  const prev = Number(pick(monthly[monthly.length - 2])) || 0
-  if (!prev) return null
-  return ((cur - prev) / Math.abs(prev)) * 100
+  const current = Number(pick(monthly[monthly.length - 1])) || 0
+  const previous = Number(pick(monthly[monthly.length - 2])) || 0
+  if (!previous) return null
+  return ((current - previous) / Math.abs(previous)) * 100
 }
 
 function CountUp({ value, format }) {
-  const v = useCountUp(value)
-  return <>{format(v)}</>
+  return <>{format(useCountUp(value))}</>
 }
 
-const bento = (i) => ({ '--i': i })
-
-function Delta({ value, invert = false, hero = false, suffix }) {
-  if (value == null) return suffix ? <span>{suffix}</span> : null
+function Delta({ value, invert = false, suffix }) {
+  if (value == null) return <span>{suffix}</span>
   const up = value >= 0
-  const good = invert ? !up : up
+  const isGood = invert ? !up : up
   const Icon = up ? ArrowUpRight : ArrowDownRight
   return (
-    <>
-      <span className={`delta ${hero ? 'delta-on-hero' : good ? 'up' : 'down'}`}>
-        <Icon size={12} />{Math.abs(value).toFixed(0)}%
-      </span>
-      {suffix && <span>{suffix}</span>}
-    </>
+    <span className={`delta ${isGood ? 'up' : 'down'}`}>
+      <Icon size={12} /> {Math.abs(value).toFixed(0)}% {suffix}
+    </span>
   )
 }
 
 export default function Dashboard() {
   const { summary, transactions, categories, monthly, user, theme, welcomeSlogan, setUploadOpen, setActiveView } = useApp()
-  const C = chartColors(theme)
-
-  const now = new Date()
-  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening'
-  const name = user?.name?.split(' ')[0] || 'there'
-
-  const topCats = Object.entries(categories).sort((a, b) => b[1] - a[1]).slice(0, 5)
-  const totalExp = Object.values(categories).reduce((s, v) => s + v, 0) || 1
-
-  const incomeDelta = monthDelta(monthly, m => m.income)
-  const expenseDelta = monthDelta(monthly, m => m.expenses)
-  const balanceDelta = monthDelta(monthly, m => (Number(m.income) || 0) - (Number(m.expenses) || 0))
+  const colors = chartColors(theme)
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const firstName = user?.name?.split(' ')[0] || 'there'
+  const topCategories = Object.entries(categories).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const incomeDelta = monthDelta(monthly, item => item.income)
+  const expenseDelta = monthDelta(monthly, item => item.expenses)
+  const balanceDelta = monthDelta(monthly, item => (Number(item.income) || 0) - (Number(item.expenses) || 0))
 
   const doughnutData = {
-    labels: topCats.map(([k]) => k),
+    labels: topCategories.map(([name]) => name),
     datasets: [{
-      data: topCats.map(([, v]) => v),
-      backgroundColor: PALETTE.slice(0, topCats.length),
+      data: topCategories.map(([, amount]) => amount),
+      backgroundColor: PALETTE.slice(0, topCategories.length),
       borderWidth: 0,
-      hoverOffset: 6,
-    }]
+      hoverOffset: 5,
+    }],
   }
   const doughnutOptions = {
-    responsive: true, maintainAspectRatio: false,
-    cutout: '70%',
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '74%',
     plugins: {
-      legend: { position: 'right', labels: { color: C.legend, font: { size: 12 }, boxWidth: 10, usePointStyle: true, pointStyle: 'circle', padding: 14 } },
-      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)}` } }
-    }
+      legend: {
+        position: 'right',
+        labels: { color: colors.legend, font: { size: 11 }, boxWidth: 8, usePointStyle: true, pointStyle: 'circle', padding: 12 },
+      },
+      tooltip: { callbacks: { label: context => ` ${context.label}: ${fmt(context.raw)}` } },
+    },
   }
 
   const lineData = {
-    labels: monthly.map(m => m.month),
+    labels: monthly.map(item => item.month),
     datasets: [
       {
-        label: 'Income', data: monthly.map(m => m.income),
-        borderColor: C.income, backgroundColor: alpha(C.income, 0.10),
-        fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2.5,
+        label: 'Income', data: monthly.map(item => item.income),
+        borderColor: colors.income, backgroundColor: alpha(colors.income, 0.08),
+        fill: true, tension: 0.35, pointRadius: 2, borderWidth: 2,
       },
       {
-        label: 'Expenses', data: monthly.map(m => m.expenses),
-        borderColor: C.expense, backgroundColor: alpha(C.expense, 0.10),
-        fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2.5,
+        label: 'Expenses', data: monthly.map(item => item.expenses),
+        borderColor: colors.expense, backgroundColor: alpha(colors.expense, 0.06),
+        fill: true, tension: 0.35, pointRadius: 2, borderWidth: 2,
       },
-    ]
+    ],
   }
   const lineOptions = {
-    responsive: true, maintainAspectRatio: false,
+    responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: C.legend, font: { size: 12 }, boxWidth: 10, usePointStyle: true, pointStyle: 'circle' } },
-      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}` } }
+      legend: { labels: { color: colors.legend, font: { size: 11 }, boxWidth: 8, usePointStyle: true, pointStyle: 'circle' } },
+      tooltip: { callbacks: { label: context => ` ${context.dataset.label}: ${fmt(context.raw)}` } },
     },
     scales: {
-      x: { grid: { display: false }, border: { display: false }, ticks: { color: C.tick, font: { size: 11 } } },
-      y: { grid: { color: C.grid }, border: { display: false }, ticks: { color: C.tick, font: { size: 11 }, callback: v => fmt(v) } }
-    }
+      x: { grid: { display: false }, border: { display: false }, ticks: { color: colors.tick, font: { size: 10 } } },
+      y: { grid: { color: colors.grid }, border: { display: false }, ticks: { color: colors.tick, font: { size: 10 }, callback: value => fmt(value) } },
+    },
   }
-
-  const recentTxns = [...transactions].slice(0, 7)
+  const recentTransactions = transactions.slice(0, 6)
 
   return (
-    <div className="view-panel">
-      <div className="dash-hello bento-in" style={bento(0)}>
-        <h1>{greeting}, {name}</h1>
-        <p className="dashboard-slogan">{welcomeSlogan || 'Stay on top of your money, monitor spending, and ask FinTrack anything.'}</p>
-      </div>
+    <div className="view-panel dashboard-clean">
+      <header className="dash-hello">
+        <div>
+          <span className="dashboard-eyebrow">FINANCIAL OVERVIEW</span>
+          <h1>{greeting}, {firstName}</h1>
+          <p>{welcomeSlogan || 'A clear picture of your money, all in one place.'}</p>
+        </div>
+        <div className="dashboard-actions">
+          <button className="btn-ghost" onClick={() => setUploadOpen(true)}><Upload size={16} /> Import</button>
+          <button className="btn-primary" onClick={() => setActiveView('transactions')}><Plus size={16} /> Add transaction</button>
+        </div>
+      </header>
 
-      <FeatureNote
-        slogan="Small money habits add up over time."
-        tip={topCats.length ? `Your largest recorded spending category is ${topCats[0][0]} at ${fmt(topCats[0][1])}. Review the related transactions before changing your budget.` : 'Import a bank statement or add transactions to unlock spending patterns and monthly comparisons.'}
-        actionLabel={topCats.length ? 'Open transactions' : 'Import records'}
-        onAction={() => topCats.length ? setActiveView('transactions') : setUploadOpen(true)}
-      />
-
-      <div className="dash-top">
-        {/* ---- Total balance ---- */}
-        <section className="balance-card bento-in" style={bento(1)}>
-          <div className="balance-head">
-            <span className="balance-label">Total Balance</span>
-            <span className="currency-pill">INR (₹) <ChevronDown size={14} /></span>
-          </div>
+      <section className="dashboard-overview" aria-label="Account overview">
+        <article className="balance-card">
+          <span className="balance-label">Net balance</span>
           <div className="balance-amount"><CountUp value={summary.balance} format={fmt} /></div>
           <div className="delta-row">
-            <Delta value={balanceDelta} suffix="than last month" />
-            {balanceDelta == null && <span>Income − Expenses</span>}
+            <Delta value={balanceDelta} suffix="vs. last month" />
+            {balanceDelta == null && <span>Income minus expenses</span>}
           </div>
+        </article>
 
-          <div className="balance-actions">
-            <button className="btn-primary" onClick={() => setActiveView('transactions')}>
-              <Plus size={18} /> Add Transaction
-            </button>
-            <button className="btn-ghost" onClick={() => setUploadOpen(true)}>
-              <Upload size={18} /> Upload CSV
-            </button>
-          </div>
+        <article className="kpi">
+          <div className="kpi-top"><span className="kpi-label">Income</span><span className="kpi-icon"><Wallet size={17} /></span></div>
+          <div className="kpi-value"><CountUp value={summary.total_income} format={fmt} /></div>
+          <div className="kpi-foot"><Delta value={incomeDelta} suffix="this month" />{incomeDelta == null && <span>{summary.transaction_count || 0} entries</span>}</div>
+        </article>
 
-          <div className="wallets">
-            <div className="wallets-head">Top spending<span>{Object.keys(categories).length} categories</span></div>
-            <div className="wallet-row">
-              {topCats.length ? topCats.slice(0, 3).map(([cat, amt], i) => (
-                <div className="wallet bento-in" key={cat} style={bento(3 + i)}>
-                  <div className="wallet-top">
-                    <i className="wallet-dot" style={{ background: PALETTE[i] }} />
-                    <span>{cat}</span>
-                  </div>
-                  <div className="wallet-amount">{fmt(amt)}</div>
-                  <div className="wallet-sub">{((amt / totalExp) * 100).toFixed(1)}% of spending</div>
-                  <div className="wallet-bar"><i style={{ width: `${(amt / totalExp) * 100}%`, background: PALETTE[i] }} /></div>
-                </div>
-              )) : (
-                <div className="wallet" style={{ gridColumn: '1 / -1', color: 'var(--text-muted)' }}>
-                  No spending yet — upload a CSV or add transactions.
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+        <article className="kpi">
+          <div className="kpi-top"><span className="kpi-label">Expenses</span><span className="kpi-icon"><TrendingDown size={17} /></span></div>
+          <div className="kpi-value"><CountUp value={summary.total_expenses} format={fmt} /></div>
+          <div className="kpi-foot"><Delta value={expenseDelta} invert suffix="this month" />{expenseDelta == null && <span>{Object.keys(categories).length} categories</span>}</div>
+        </article>
 
-        {/* ---- KPI tiles ---- */}
-        <section className="kpi-grid">
-          <div className="kpi hero bento-in" style={bento(2)}>
-            <div className="kpi-top">
-              <span className="kpi-label">Total Income</span>
-              <span className="kpi-icon"><Wallet size={18} /></span>
-            </div>
-            <div className="kpi-value"><CountUp value={summary.total_income} format={fmt} /></div>
-            <div className="kpi-foot">
-              <Delta value={incomeDelta} hero suffix="This month" />
-              {incomeDelta == null && <span>{summary.transaction_count || 0} total entries</span>}
-            </div>
+        <article className="kpi">
+          <div className="kpi-top"><span className="kpi-label">Savings rate</span><span className="kpi-icon"><Percent size={17} /></span></div>
+          <div className="kpi-value"><CountUp value={summary.savings_rate} format={fmtPct} /></div>
+          <div className="kpi-foot">
+            <span className={`delta ${(Number(summary.savings_rate) || 0) >= 20 ? 'up' : 'down'}`}>
+              {(Number(summary.savings_rate) || 0) >= 20 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              {(Number(summary.savings_rate) || 0) >= 20 ? 'On track' : 'Below 20% target'}
+            </span>
           </div>
+        </article>
+      </section>
 
-          <div className="kpi bento-in" style={bento(3)}>
-            <div className="kpi-top">
-              <span className="kpi-label">Total Expenses</span>
-              <span className="kpi-icon"><TrendingDown size={18} /></span>
-            </div>
-            <div className="kpi-value"><CountUp value={summary.total_expenses} format={fmt} /></div>
-            <div className="kpi-foot">
-              <Delta value={expenseDelta} invert suffix="This month" />
-              {expenseDelta == null && <span>{Object.keys(categories).length} categories</span>}
-            </div>
-          </div>
-
-          <div className="kpi bento-in" style={bento(4)}>
-            <div className="kpi-top">
-              <span className="kpi-label">Net Balance</span>
-              <span className="kpi-icon"><Layers size={18} /></span>
-            </div>
-            <div className="kpi-value"><CountUp value={summary.balance} format={fmt} /></div>
-            <div className="kpi-foot">
-              <Delta value={balanceDelta} suffix="This month" />
-              {balanceDelta == null && <span>Income − Expenses</span>}
-            </div>
-          </div>
-
-          <div className="kpi bento-in" style={bento(5)}>
-            <div className="kpi-top">
-              <span className="kpi-label">Savings Rate</span>
-              <span className="kpi-icon"><Percent size={18} /></span>
-            </div>
-            <div className="kpi-value"><CountUp value={summary.savings_rate} format={fmtPct} /></div>
-            <div className="kpi-foot">
-              <span className={`delta ${(Number(summary.savings_rate) || 0) >= 20 ? 'up' : 'down'}`}>
-                {(Number(summary.savings_rate) || 0) >= 20 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {(Number(summary.savings_rate) || 0) >= 20 ? 'On track' : 'Below goal'}
-              </span>
-              <span>Target ≥ 20%</span>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* ---- Charts ---- */}
-      <div className="chart-grid">
-        <div className="chart-card bento-in" style={bento(6)}>
-          <div className="chart-card-header">
-            <h3>Expense by Category</h3>
-            <span className="badge badge-orange">{Object.keys(categories).length} categories</span>
-          </div>
+      <section className="chart-grid dashboard-charts" aria-label="Spending charts">
+        <article className="chart-card">
+          <div className="chart-card-header"><div><h3>Spending breakdown</h3><p>Where your expenses go</p></div></div>
           <div className="chart-wrapper">
-            {topCats.length ? <Doughnut data={doughnutData} options={doughnutOptions} /> : <EmptyChart onUpload={() => setUploadOpen(true)} />}
+            {topCategories.length ? <Doughnut data={doughnutData} options={doughnutOptions} /> : <EmptyChart onUpload={() => setUploadOpen(true)} />}
           </div>
-        </div>
-        <div className="chart-card bento-in" style={bento(7)}>
-          <div className="chart-card-header">
-            <h3>Monthly Cashflow Trend</h3>
-            <span className="badge badge-orange">{monthly.length} months</span>
-          </div>
+        </article>
+        <article className="chart-card">
+          <div className="chart-card-header"><div><h3>Monthly cash flow</h3><p>Income compared with expenses</p></div></div>
           <div className="chart-wrapper">
             {monthly.length ? <Line data={lineData} options={lineOptions} /> : <EmptyChart onUpload={() => setUploadOpen(true)} />}
           </div>
-        </div>
-      </div>
+        </article>
+      </section>
 
-      {/* ---- Categories + recent ---- */}
-      <div className="split-grid">
-        <div className="panel bento-in" style={bento(8)}>
-          <div className="panel-header"><h3>Top Spending Categories</h3></div>
-          <div className="cat-list">
-            {topCats.length ? topCats.map(([cat, amt], i) => (
-              <div className="cat-item" key={cat}>
-                <div className="cat-item-row">
-                  <span className="cat-name">{cat}</span>
-                  <span className="cat-amount">{fmt(amt)}<span className="cat-pct">{((amt / totalExp) * 100).toFixed(1)}%</span></span>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${(amt / totalExp) * 100}%`, background: PALETTE[i] }} />
-                </div>
-              </div>
-            )) : <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No data yet — upload a CSV or add transactions.</p>}
-          </div>
+      <section className="panel recent-panel">
+        <div className="panel-header">
+          <div><h3>Recent transactions</h3><p>Your latest activity</p></div>
+          <button className="btn-ghost" onClick={() => setActiveView('transactions')}>View all <span>{transactions.length}</span></button>
         </div>
-
-        <div className="panel bento-in" style={bento(9)}>
-          <div className="panel-header">
-            <h3>Recent Transactions</h3>
-            <button className="btn-ghost" style={{ padding: '6px 14px', fontSize: 12 }} onClick={() => setActiveView('transactions')}>
-              View all · {transactions.length}
-            </button>
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table>
-              <thead>
-                <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th></tr>
-              </thead>
-              <tbody>
-                {recentTxns.length ? recentTxns.map(t => (
-                  <tr key={t.id ?? t.date + t.description}>
-                    <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t.date}</td>
-                    <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.description}</td>
-                    <td><span className="badge badge-blue" style={{ fontSize: 10 }}>{t.category}</span></td>
-                    <td>
-                      <span style={{ color: t.type === 'income' ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
-                        {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}
-                      </span>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr><td colSpan={4} style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>No transactions yet.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="recent-table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th></tr></thead>
+            <tbody>
+              {recentTransactions.length ? recentTransactions.map(transaction => (
+                <tr key={transaction.id ?? transaction.date + transaction.description}>
+                  <td className="recent-date">{transaction.date}</td>
+                  <td className="recent-description">{transaction.description}</td>
+                  <td><span className="badge badge-blue">{transaction.category}</span></td>
+                  <td><span className={`recent-amount ${transaction.type === 'income' ? 'income' : 'expense'}`}>{transaction.type === 'income' ? '+' : '−'}{fmt(transaction.amount)}</span></td>
+                </tr>
+              )) : <tr><td colSpan={4} className="recent-empty">No transactions yet. Import a CSV or add your first transaction.</td></tr>}
+            </tbody>
+          </table>
         </div>
-      </div>
+      </section>
     </div>
   )
 }
@@ -306,8 +201,8 @@ function EmptyChart({ onUpload }) {
     <div className="empty-chart">
       <span className="empty-chart-icon"><TrendingUp size={19} /></span>
       <strong>Your chart starts with a transaction</strong>
-      <span>Import a CSV or add a transaction to see your trends.</span>
-      <button className="empty-chart-action" onClick={onUpload}><Upload size={14} /> Import a CSV</button>
+      <span>Import a CSV to see your trends.</span>
+      <button className="empty-chart-action" onClick={onUpload}><Upload size={14} /> Import CSV</button>
     </div>
   )
 }

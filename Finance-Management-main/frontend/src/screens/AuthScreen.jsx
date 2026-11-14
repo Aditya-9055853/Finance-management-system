@@ -1,59 +1,109 @@
 import React, { useEffect, useState } from 'react'
 import { useApp } from '../App'
+import {
+  createFirebaseAccount,
+  getFirebaseEmailVerified,
+  openFinTrackSession,
+  sendFirebaseVerification,
+  signInWithFirebase,
+} from '../firebaseAuth'
 
 export default function AuthScreen() {
   const { setScreen, setUser, addToast, chooseWelcomeSlogan } = useApp()
-  const [mode, setMode] = useState('login') // login | signup
+  const [mode, setMode] = useState('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [pendingIdToken, setPendingIdToken] = useState('')
+  const [verificationRequired, setVerificationRequired] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [introVisible, setIntroVisible] = useState(true)
   const [introLeaving, setIntroLeaving] = useState(false)
 
   useEffect(() => {
     const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    const introDuration = reducedMotion ? 300 : 1900
-    const leaveTimer = window.setTimeout(() => setIntroLeaving(true), introDuration - 550)
-    const finishTimer = window.setTimeout(() => setIntroVisible(false), introDuration)
-    return () => {
-      window.clearTimeout(leaveTimer)
-      window.clearTimeout(finishTimer)
-    }
+    const duration = reducedMotion ? 300 : 1900
+    const leaveTimer = window.setTimeout(() => setIntroLeaving(true), duration - 550)
+    const finishTimer = window.setTimeout(() => setIntroVisible(false), duration)
+    return () => { window.clearTimeout(leaveTimer); window.clearTimeout(finishTimer) }
   }, [])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const enterApp = (user, message = `Welcome, ${user.name}!`) => {
+    setUser(user)
+    chooseWelcomeSlogan()
+    addToast(message, 'success')
+    setScreen('app')
+  }
+
+  const handleSubmit = async event => {
+    event.preventDefault()
     setError('')
-    if (mode === 'signup' && !name.trim()) { setError('Name is required.'); return }
+    setNotice('')
     if (!email.trim()) { setError('Email is required.'); return }
-    if (!password || password.length < 6) { setError('Password must be at least 6 characters.'); return }
+    if (!password || (mode === 'signup' && password.length < 8)) {
+      setError('Passwords must be at least 8 characters.')
+      return
+    }
+    if (mode === 'signup' && !name.trim()) { setError('Name is required.'); return }
+
     setLoading(true)
     try {
-      const res = await fetch(mode === 'signup' ? '/api/register' : '/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data.error || 'Something went wrong. Please try again.'); return }
-      setUser(data.user)
-      chooseWelcomeSlogan()
-      addToast(`Welcome, ${data.user.name}!`, 'success')
-      setScreen('app')
-    } catch {
-      setError('Cannot reach the server. Is the backend running?')
+      if (mode === 'signup') {
+        const account = await createFirebaseAccount(email.trim(), password, name.trim())
+        await sendFirebaseVerification(account.idToken)
+        setPendingIdToken(account.idToken)
+        setVerificationRequired(true)
+        setNotice(`We sent a verification link to ${email.trim()}. Open that email, click the link, then return here and sign in.`)
+        return
+      }
+
+      const account = await signInWithFirebase(email.trim(), password)
+      const verified = await getFirebaseEmailVerified(account.idToken)
+      if (!verified) {
+        await sendFirebaseVerification(account.idToken)
+        setPendingIdToken(account.idToken)
+        setVerificationRequired(true)
+        setNotice(`Your email is not verified yet. We sent a verification link to ${email.trim()}.`)
+        return
+      }
+
+      const user = await openFinTrackSession(account.idToken)
+      enterApp(user)
+    } catch (requestError) {
+      setError(requestError.message || 'Could not complete sign-in. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleGuest = async () => {
-    try { await fetch('/api/logout', { method: 'POST' }) } catch {}
-    setUser(null)
-    setScreen('app')
+  const resendVerification = async () => {
+    if (!pendingIdToken) {
+      setVerificationRequired(false)
+      setMode('login')
+      setNotice('Sign in again to request a new verification link.')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      await sendFirebaseVerification(pendingIdToken)
+      setNotice(`A new verification link was sent to ${email.trim()}.`)
+    } catch (requestError) {
+      setError(requestError.message || 'Could not send the verification link.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const returnToSignIn = () => {
+    setVerificationRequired(false)
+    setPendingIdToken('')
+    setMode('login')
+    setError('')
+    setNotice('After you click the verification link, sign in here with your email and password.')
   }
 
   return (
@@ -65,94 +115,66 @@ export default function AuthScreen() {
           <h1 className="login-intro-title"><span>FinTrack</span></h1>
           <p className="login-intro-subtitle">Make every move count.</p>
         </div>
-        <div className="login-intro-coins" aria-hidden="true">
-          <i className="intro-coin intro-coin-one">₹</i>
-          <i className="intro-coin intro-coin-two">₹</i>
-          <i className="intro-coin intro-coin-three">₹</i>
-          <i className="intro-coin intro-coin-four">₹</i>
-          <i className="intro-coin intro-coin-five">₹</i>
-        </div>
-        <div className="login-intro-floor" />
       </div>}
-      <div className="auth-illustration">
+
+      <aside className="auth-illustration">
         <div className="auth-scene-copy">
           <span className="auth-scene-kicker">YOUR MONEY, IN FOCUS</span>
           <h1>Make every<br /><em>move count.</em></h1>
           <p>One clear view for your spending, savings, and next steps.</p>
         </div>
-        <div className="auth-3d-stage" aria-hidden="true">
-          <div className="auth-stage-glow" />
-          <div className="auth-orb"><span>₹</span><i /><b /></div>
-          <div className="auth-coin auth-coin-a">₹</div>
-          <div className="auth-coin auth-coin-b">₹</div>
-          <div className="auth-coin auth-coin-c">₹</div>
-          <div className="auth-float-card auth-float-card-back"><span>MONTHLY SAVINGS</span><strong>+12.8%</strong><i /></div>
-          <div className="auth-float-card auth-float-card-front"><span className="auth-mini-icon">↗</span><span>Spending insight</span><strong>You're on track</strong><i><b /></i></div>
-          <div className="auth-stage-ring auth-stage-ring-a" />
-          <div className="auth-stage-ring auth-stage-ring-b" />
-        </div>
         <div className="auth-illustration-footer"><span className="auth-footer-dot" />A smarter view of your finances</div>
-      </div>
+      </aside>
 
-      <div className="auth-form-side">
+      <section className="auth-form-side">
         <div className="auth-form-wrap">
           <div className="auth-logo">
-            <div className="auth-logo-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-              </svg>
-            </div>
+            <div className="auth-logo-icon" aria-hidden="true">F</div>
             <span className="auth-logo-name">Fin<em>Track</em></span>
           </div>
 
-          <h2>{mode === 'login' ? 'Welcome back' : 'Create account'}</h2>
-          <p>{mode === 'login' ? 'Sign in to your account' : 'Start managing your personal finances'}</p>
+          <h2>{verificationRequired ? 'Check your email' : mode === 'login' ? 'Welcome back' : 'Create account'}</h2>
+          <p>{verificationRequired ? 'Verify your email address using the link we sent.' : mode === 'login' ? 'Sign in to your account' : 'Create an account with a verified email address'}</p>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-error" role="alert">{error}</div>}
+          {notice && <div className="auth-notice" role="status">{notice}</div>}
 
-          <form onSubmit={handleSubmit}>
-            {mode === 'signup' && (
-              <div className="auth-form-group">
-                <label htmlFor="auth-name">Name</label>
-                <input id="auth-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoComplete="name" />
-              </div>
-            )}
+          {!verificationRequired && <form onSubmit={handleSubmit}>
+            {mode === 'signup' && <div className="auth-form-group">
+              <label htmlFor="auth-name">Name</label>
+              <input id="auth-name" type="text" value={name} onChange={event => setName(event.target.value)} placeholder="Your name" autoComplete="name" />
+            </div>}
+
             <div className="auth-form-group">
-              <label htmlFor="auth-email">Email</label>
-              <input id="auth-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+              <label htmlFor="auth-email">Email address</label>
+              <input id="auth-email" type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" />
             </div>
+
             <div className="auth-form-group">
               <label htmlFor="auth-password">Password</label>
               <div className="auth-password-field">
-                <input id="auth-password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
-                <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(visible => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}>
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
+                <input id="auth-password" type={showPassword ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder="At least 8 characters" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+                <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}>{showPassword ? 'Hide' : 'Show'}</button>
               </div>
             </div>
+
             <button type="submit" className="btn-primary" style={{ width: '100%', padding: '11px', marginTop: 4 }} disabled={loading}>
-              {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create Account'}
+              {loading ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
-          </form>
+          </form>}
 
-          <div className="auth-divider"><span>or</span></div>
-          <button type="button" className="btn-ghost" style={{ width: '100%', padding: '11px' }} onClick={handleGuest}>
-            Continue as Guest (No Login)
-          </button>
-
-          <p className="auth-switch">
+          {verificationRequired ? <div className="auth-verification-actions">
+            <button type="button" className="auth-link-button" onClick={resendVerification} disabled={loading}>Send another link</button>
+            <button type="button" className="auth-link-button muted" onClick={returnToSignIn}>Back to sign in</button>
+          </div> : <p className="auth-switch">
             {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-            <a href="#" onClick={e => { e.preventDefault(); setMode(mode === 'login' ? 'signup' : 'login'); setError('') }}>
-              {mode === 'login' ? 'Sign up' : 'Sign in'}
-            </a>
-          </p>
-          <p style={{ textAlign: 'center', marginTop: 10 }}>
-            <button style={{ background: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }} onClick={() => setScreen('landing')}>
-              ← Back to home
-            </button>
-          </p>
+            <a href="#" onClick={event => { event.preventDefault(); setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setNotice('') }}>{mode === 'login' ? 'Sign up' : 'Sign in'}</a>
+          </p>}
+
+          <p className="auth-security-note">Email verification is handled securely by Firebase. Never share your banking PIN or OTP.</p>
+          <button className="auth-back-button" onClick={() => setScreen('landing')}>← Back to home</button>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

@@ -8,7 +8,7 @@ FinTrack is a full-stack finance dashboard. The React frontend is built with Vit
 - Savings goal, loan/EMI, investment, and currency tools
 - CSV upload and bank statement import
 - Optional Gemini chat with a local financial knowledge base
-- Session-based accounts and guest mode
+- Session-based accounts with password sign-in and email verification
 
 ## Project layout
 
@@ -55,6 +55,9 @@ Copy `.env.example` to `.env` and set values as needed:
 | --- | --- | --- |
 | `FLASK_SECRET_KEY` | Signs browser session cookies. Set a long, random value for production. | Development-only fallback |
 | `GEMINI_API_KEY` | Enables Gemini assistant responses. Keep this server-side. | Empty (fallback chat mode) |
+| `VITE_FIREBASE_API_KEY` | Firebase web API key used by the browser auth flow. | Required |
+| `FIREBASE_PROJECT_ID` | Firebase project ID used to verify sign-in tokens. | Required |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | Private Firebase Admin service account JSON; keep this secret. | Required on server |
 | `GEMINI_MODEL` | Gemini text model | `gemini-3.6-flash` |
 | `EMBEDDING_MODEL` | Gemini embedding model | `gemini-embedding-001` |
 | `AUTONOMOUS_CHECK_MINUTES` | Background monitor interval | `30` |
@@ -64,13 +67,30 @@ Copy `.env.example` to `.env` and set values as needed:
 
 Never commit `.env` or place API keys in frontend code. Without a Gemini key, dashboard and finance tools still work and chat uses its fallback response.
 
+### Email verification setup
+
+New users create an account with an email and password, then click the verification link Firebase sends before FinTrack grants access. Firebase handles password storage and email delivery; Flask verifies Firebase ID tokens before creating the app session. Existing local accounts can keep their finance records: create a Firebase account with the same email, verify it, and sign in to link that account.
+
+### Firebase setup (free Spark plan)
+
+1. Create a Firebase project and open **Authentication → Sign-in method**. Enable **Email/Password**.
+2. In **Authentication → Settings → Authorized domains**, add the Render hostname (for example, `finai-ieb8.onrender.com`) and `localhost` for local development.
+3. Register a Web App in Firebase project settings and copy its **Web API key** and **Project ID**.
+4. In **Project settings → Service accounts**, create a private key. Copy the complete JSON securely; never commit it or put it in frontend code.
+5. Set `VITE_FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID`, and `FIREBASE_SERVICE_ACCOUNT_JSON` in Render's service **Environment** settings. For local work, place them in the root `.env` file (copy `.env.example`) and restart the backend/build.
+6. Redeploy. A new signup should receive a Firebase verification link. The browser returns to the app after verification; the user then signs in with the same password.
+
+The Firebase web API key is intended to be public, but restrict it to the Identity Toolkit API in Google Cloud if desired. The service account JSON is a private server credential and must remain secret. Firebase Spark includes a free allowance for address verification emails; check Firebase's current [Authentication limits](https://firebase.google.com/docs/auth/limits).
+
+Guest access is disabled so an unverified visitor cannot use transaction or budget features. Each verified account sees its own finance data.
+
 ## Deploy to Render
 
 The repository includes a `render.yaml` Blueprint at its top level. It builds the React application and starts Flask with Gunicorn, all on one public service and domain. API requests remain same-origin, so no separate frontend hosting or CORS setup is needed.
 
 1. Push the repository to GitHub.
 2. In Render, choose **New → Blueprint**, connect the repository, and apply `render.yaml`.
-3. In the service's environment settings, add `GEMINI_API_KEY` if Gemini chat is needed.
+3. In the service's environment settings, add `GEMINI_API_KEY` if Gemini chat is needed, plus the Firebase values described above.
 4. Wait for the first build and open the public service URL Render provides.
 5. Enable Auto-Deploy for the chosen branch if you want pushes to deploy automatically.
 
@@ -87,7 +107,7 @@ Use a Python web service that supports persistent storage. Build with `pip insta
 ## Data and deployment notes
 
 - Accounts and finance records are stored in the configured database. A new browser can sign up for its own account; one user's records are not intended to be shared with everyone.
-- Guest data is tied to its browser session. Signing up or logging in creates a regular account.
+- Email verification is required before users can access finance data. Users only see records associated with their account.
 - SQLite is suitable for this single-instance starter deployment. For multiple app instances or heavier concurrent use, migrate to a managed PostgreSQL database and review the in-process monitor's deployment model.
 - Uploaded CSV copies are stored under `DATA_DIR/uploads`; transaction rows are also stored in the database.
 - The background budget monitor runs inside the web process. Use a single worker as configured to avoid duplicate monitor jobs.

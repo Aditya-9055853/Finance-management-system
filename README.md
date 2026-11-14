@@ -16,6 +16,8 @@ A full-stack personal finance dashboard with a React interface and Flask API. Th
 
 The blueprint uses temporary storage at `/tmp/finai-data` so it can run on Render's free web service. SQLite records and uploaded CSVs can be lost when the service restarts, sleeps, or redeploys. The blueprint uses one Gunicorn worker because the app runs a single in-process background monitor and uses SQLite.
 
+For signup email verification on Render Free, configure a transactional email API key and verified sender in the service's environment. Gmail SMTP app passwords do not work from Render Free because it blocks SMTP egress.
+
 ## Updating the live app
 
 Commit and push code changes to the connected GitHub branch. Render rebuilds the React frontend and redeploys the Flask service; users see the update when deployment completes and they reload the page. To deploy automatically, enable **Auto-Deploy** for that branch in Render. This is a deployment workflow, not live editing: changes on your computer are not visible to users until pushed and deployed.

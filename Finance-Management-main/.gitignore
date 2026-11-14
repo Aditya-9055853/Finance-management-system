@@ -1,6 +1,13 @@
 .env
+.env.*
+!.env.example
+*service-account*.json
+*-firebase-adminsdk-*.json
 .venv/
 __pycache__/
 *.pyc
+*.db
+*.sqlite
+*.sqlite3
 uploads/*
 !uploads/.gitkeep

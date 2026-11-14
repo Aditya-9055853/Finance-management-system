@@ -32,9 +32,6 @@ export default function Landing() {
               Get Started Free
               <ArrowRight size={16} style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 6 }} />
             </button>
-            <button className="btn-ghost" style={{ padding: '12px 24px' }} onClick={() => setScreen('app')}>
-              Skip login & launch
-            </button>
           </div>
           <div className="landing-stats">
             <div className="landing-stat"><strong>100%</strong><span>Grounded data</span></div>
