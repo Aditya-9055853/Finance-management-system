@@ -542,13 +542,21 @@ class FinanceAgent:
                     "- Be concise, practical, and clear. Format answers with markdown bold headers and lists."
                 )
 
+                retrieved_knowledge = (
+                    "\n\n".join(
+                        f"[{result['title']}]\n{result['text'][:400]}"
+                        for result in rag_results
+                    )
+                    if rag_results else "None"
+                )
+
                 prompt = f"""{system_instructions}
 
 CALCULATED FINANCIAL FACTS (Ground Truth):
 {json.dumps(facts, indent=2, default=str) if facts else "None"}
 
 RETRIEVED KNOWLEDGE:
-{"\n\n".join(f"[{r['title']}]\n{r['text'][:400]}" for r in rag_results) if rag_results else "None"}
+{retrieved_knowledge}
 
 USER QUESTION:
 {message}
