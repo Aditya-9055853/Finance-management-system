@@ -1,163 +1,107 @@
-# FinAI: Intelligent Personal Finance Assistant
+# FinAI — Intelligent Personal Finance Assistant
 
-An AI-103 project demonstrating Generative AI, an LLM, RAG, an AI agent with tool calling, CSV data processing, financial knowledge retrieval, and Responsible AI — wrapped in a working web application.
-
-## Problem Statement
-
-Many people struggle to understand where their money goes and how to plan toward savings goals. Spreadsheets are tedious, and generic chatbots either can't see your actual numbers or hallucinate financial facts. FinAI addresses this by combining **real transaction analysis** with **grounded financial education**, synthesized by an LLM into a natural conversation.
-
-## Objectives
-
-- Let a user upload their own transaction CSV (or use built-in sample data) and see an instant financial dashboard.
-- Answer natural-language questions about that data using deterministic Python calculations (never hallucinated numbers).
-- Answer general financial education questions (FD, SIP, PPF, 50/30/20 rule, etc.) using a local RAG pipeline over a hand-written knowledge base.
-- Combine both for compound questions ("I want to save ₹5,000 — what should I cut?").
-- Do all of this responsibly: no fabricated numbers, no guaranteed returns, no requests for banking credentials.
+FinAI is a full-stack finance dashboard. The React frontend is built with Vite and served by Flask; the Flask API stores user accounts, transactions, and budgets in SQLite. Gemini is optional and only called from the backend.
 
 ## Features
 
-- CSV upload with validation (required columns, types, dates, amounts) and graceful sample-data fallback
-- Dashboard: total income, total expenses, balance, savings rate
-- Charts: expense-by-category doughnut, monthly income vs. expenses bar chart
-- Searchable, filterable, sortable transaction table
-- AI chat panel with quick-question buttons, source/tool transparency, and session-based chat memory
-- Savings goal analyzer (target amount + timeline → required monthly saving, gap, progress)
-- Budget planner (set per-category budgets, compare against actual spending)
-- Local RAG engine (TF-IDF + cosine similarity) over an ~8,000-word finance knowledge base
-- Real agent-style routing: the agent decides whether a question needs transaction tools, RAG, both, or neither, before calling Gemini to write the final answer
+- Dashboard, transaction table, analytics, and category budgets
+- Savings goal, loan/EMI, investment, and currency tools
+- CSV upload and bank statement import
+- Optional Gemini chat with a local financial knowledge base
+- Session-based accounts and guest mode
 
-## Architecture
+## Project layout
 
-```
-                          ┌─────────────────────┐
-                          │   Browser (HTML/JS)  │
-                          │  Dashboard + AI Chat  │
-                          └──────────┬───────────┘
-                                     │ REST (JSON)
-                          ┌──────────▼───────────┐
-                          │   Flask app (app.py)  │
-                          │  routes + CSV state   │
-                          └──────────┬───────────┘
-                                     │
-                    ┌────────────────┼────────────────┐
-                    │                │                 │
-          ┌─────────▼───────┐ ┌──────▼──────┐ ┌────────▼────────┐
-          │ FinanceAgent      │ │ transaction_ │ │  RAGEngine       │
-          │ (agent/) - routes │ │ / budget_ /  │ │  (rag/) - TF-IDF │
-          │ intent → tools,   │ │ goal_tools   │ │  over            │
-          │ RAG, and Gemini   │ │ (pandas)     │ │  finance_        │
-          └─────────┬────────┘ └─────────────┘ │  knowledge.md    │
-                     │                           └──────────────────┘
-                     ▼
-          ┌─────────────────────┐
-          │   Gemini API          │
-          │  (final synthesis      │
-          │   over given facts)     │
-          └─────────────────────┘
+```text
+Finance-Management-main/
+├── app.py                 # Flask API and production frontend serving
+├── run.py                 # Local development launcher
+├── config.py              # Environment and storage configuration
+├── models.py              # SQLAlchemy models
+├── agent/                 # Assistant and background monitor
+├── rag/                   # Finance knowledge retrieval
+├── tools/                 # Finance calculations
+├── data/                  # Sample CSV and knowledge base
+├── frontend/              # React + Vite source
+├── templates/ static/     # Legacy frontend fallback
+├── uploads/               # Local CSV upload directory
+└── requirements.txt
 ```
 
-The browser never talks to Gemini directly — only the Flask backend does, using a server-side API key.
+## Run locally on Windows
 
-## Technologies
+Open PowerShell in this directory:
 
-Python · Flask · Google Gemini API (`google-genai` SDK) · Pandas · scikit-learn (TF-IDF) · HTML/CSS/JavaScript · Chart.js
-
-## AI Concepts Demonstrated
-
-- **Generative AI / LLM**: Gemini generates the final natural-language answer.
-- **RAG**: user questions are matched against chunked knowledge-base sections via TF-IDF + cosine similarity; only the top-matching chunks are given to Gemini as context (not the whole document).
-- **Agent / Tool Calling**: `agent/finance_agent.py` classifies intent and decides which deterministic Python tools (transaction/budget/goal calculations) and/or RAG retrieval to invoke before calling the LLM — the LLM never does financial arithmetic itself.
-- **Prompting**: the agent builds a structured prompt containing only verified facts, retrieved knowledge, and conversation history, with explicit instructions not to invent numbers.
-- **Responsible AI**: the system never asks for banking credentials, never claims to move real money, never guarantees investment returns, and clearly states when data or knowledge is unavailable rather than making something up.
-
-## How RAG Works
-
-1. `rag/document_processor.py` splits `data/finance_knowledge.md` into chunks by `##` section headers.
-2. `rag/rag_engine.py` builds a TF-IDF vector index over all chunks at startup.
-3. On each knowledge-related question, the query is vectorized and compared via cosine similarity against all chunks.
-4. The top-K (default 4) chunks above a minimum relevance score are returned, with their section titles shown to the user as "Sources."
-
-## How the Agent Works
-
-`classify_intent()` in `agent/finance_agent.py` uses keyword/pattern matching to flag a message as transaction-related, knowledge-related, goal-related, budget-related, and/or out-of-domain. Based on that:
-- Transaction/goal/budget intents trigger the relevant Python tool calls (pandas calculations) — results become verified "facts."
-- Knowledge/goal/budget intents also trigger RAG retrieval.
-- Both facts and retrieved knowledge (plus recent chat history, for pronoun resolution like "how long would *it* take") are assembled into one prompt and sent to Gemini, which is explicitly instructed to use only the given facts and never compute or invent numbers itself.
-- Out-of-domain questions (e.g. "who is the president of France") are politely declined without calling Gemini.
-
-## How CSV Analysis Works
-
-Uploaded CSVs are validated for required columns (`date, description, category, type, amount`), valid dates, numeric amounts, and valid `type` values (`income`/`expense`). Valid data replaces the in-memory DataFrame that all tools operate on; invalid data returns specific, actionable error messages. No database is used — data lives in server memory for the running session, matching the scope of a local prototype.
-
-## Responsible AI
-
-FinAI will not: request bank passwords, OTPs, or card numbers; claim to access real bank accounts or execute transactions; guarantee investment returns; recommend one specific product as "the best"; or state specific current interest/tax rates as if permanent (the knowledge base explicitly tells the reader to verify current rates). If transaction data needed to answer a question isn't loaded, or the knowledge base doesn't cover a topic, the agent says so instead of guessing.
-
-## Installation (Windows)
-
-```
-cd FinAI
+```powershell
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-(macOS/Linux: `python3 -m venv .venv && source .venv/bin/activate`)
-
-## Gemini API Setup
-
-1. Copy `.env.example` to `.env`.
-2. Get a Gemini API key from Google AI Studio.
-3. Edit `.env` and set:
-   ```
-   GEMINI_API_KEY=your_actual_key_here
-   ```
-4. Never commit `.env` — it's already in `.gitignore`.
-
-Without a key, the app still runs fully — the chat falls back to showing the raw calculated facts and retrieved knowledge sections directly, so you can verify the tools/RAG/dashboard all work before wiring up Gemini.
-
-## Running the Application
-
-Build the React interface once (and again after frontend changes):
-
-```bash
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 cd frontend
 npm ci
 npm run build
 cd ..
-```
-
-Then start the backend. It serves the React build and automatically opens your browser:
-
-```bash
 python run.py
 ```
 
-For React development with hot reload, keep Flask running in one terminal and run `npm run dev` from `frontend` in a second terminal; open **http://localhost:5173**.
+Open <http://127.0.0.1:5000>. The built React interface is served by Flask. For frontend hot reload, run `python run.py` in one terminal, then in a second terminal run `cd frontend; npm ci; npm run dev` and visit <http://localhost:5173>.
 
-Alternatively, you can run directly with Flask:
+If PowerShell blocks virtual environment activation, run `\.venv\Scripts\python.exe -m pip install -r requirements.txt` and later `\.venv\Scripts\python.exe run.py` from the project root instead. Python 3.11 and Node.js 20 or newer are recommended.
+
+## Configuration
+
+Copy `.env.example` to `.env` and set values as needed:
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `FLASK_SECRET_KEY` | Signs browser session cookies. Set a long, random value for production. | Development-only fallback |
+| `GEMINI_API_KEY` | Enables Gemini assistant responses. Keep this server-side. | Empty (fallback chat mode) |
+| `GEMINI_MODEL` | Gemini text model | `gemini-3.6-flash` |
+| `EMBEDDING_MODEL` | Gemini embedding model | `gemini-embedding-001` |
+| `AUTONOMOUS_CHECK_MINUTES` | Background monitor interval | `30` |
+| `DATA_DIR` | Directory for SQLite and uploaded files | Project directory |
+| `DATABASE_URL` | SQLAlchemy database URL; can point to persistent SQLite storage | `finai.db` under `DATA_DIR` |
+| `COOKIE_SECURE` | Send session cookies only over HTTPS; use `true` behind HTTPS | `false` |
+
+Never commit `.env` or place API keys in frontend code. Without a Gemini key, dashboard and finance tools still work and chat uses its fallback response.
+
+## Deploy to Render
+
+The repository includes a `render.yaml` Blueprint at its top level. It builds the React application and starts Flask with Gunicorn, all on one public service and domain. API requests remain same-origin, so no separate frontend hosting or CORS setup is needed.
+
+1. Push the repository to GitHub.
+2. In Render, choose **New → Blueprint**, connect the repository, and apply `render.yaml`.
+3. In the service's environment settings, add `GEMINI_API_KEY` if Gemini chat is needed.
+4. Wait for the first build and open the public service URL Render provides.
+5. Enable Auto-Deploy for the chosen branch if you want pushes to deploy automatically.
+
+The blueprint uses temporary storage at `/tmp/finai-data` so it can run on Render's free web service. SQLite records and uploaded CSVs can be lost when the service restarts, sleeps, or redeploys. Keep the single Gunicorn worker: the app starts an in-process monitor and is configured for SQLite.
+
+### Publish changes
+
+Edit the source, commit, and push to the connected branch. Render rebuilds `frontend/dist` and restarts the backend. Users see deployed changes after the deployment finishes and they reload the site (a hard refresh can clear an old browser cache). Local edits do not appear on the public site until pushed and deployed.
+
+### Other hosting providers
+
+Use a Python web service that supports persistent storage. Build with `pip install -r requirements.txt && cd frontend && npm ci && npm run build`, then start with `gunicorn --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT app:app`. Set `FLASK_SECRET_KEY`, `COOKIE_SECURE=true`, and `DATA_DIR` to a writable persistent mount. Set `DATABASE_URL` to a persistent database; if using a hosted Postgres URL, convert `postgres://` to `postgresql://` if the provider supplies the old scheme. Make sure the runtime's database driver is installed. Configure HTTPS and backups. Do not use the Flask development server for a public deployment.
+
+## Data and deployment notes
+
+- Accounts and finance records are stored in the configured database. A new browser can sign up for its own account; one user's records are not intended to be shared with everyone.
+- Guest data is tied to its browser session. Signing up or logging in creates a regular account.
+- SQLite is suitable for this single-instance starter deployment. For multiple app instances or heavier concurrent use, migrate to a managed PostgreSQL database and review the in-process monitor's deployment model.
+- Uploaded CSV copies are stored under `DATA_DIR/uploads`; transaction rows are also stored in the database.
+- The background budget monitor runs inside the web process. Use a single worker as configured to avoid duplicate monitor jobs.
+- Financial tools are educational and do not provide licensed financial advice or execute transactions.
+
+## Frontend-only development commands
+
+From `frontend/`:
+
 ```bash
-python app.py
+npm ci
+npm run dev       # Vite on http://localhost:5173; /api proxies to Flask on port 5000
+npm run build     # production files in frontend/dist/
+npm run preview   # preview the production frontend build
 ```
 
-Then visit **http://127.0.0.1:5000** in your browser.
-
-## Example Questions to Test
-
-- How much did I spend?
-- Where am I spending the most?
-- I want to save ₹5,000 this month. What should I do?
-- What is an emergency fund?
-- What is the 50/30/20 rule?
-- What is an FD? What is SIP?
-- Compare my spending between January and February.
-- Based on my spending, how can I build an emergency fund? *(combined: tools + RAG)*
-- Who is the president of France? *(out-of-domain — should politely decline)*
-
-## Limitations
-
-- Educational prototype: uses fictional sample data, no real bank integration, no transaction execution.
-- No guaranteed investment returns or personalized licensed financial advice.
-- Intent classification is keyword/pattern-based (transparent and debuggable for a student project) rather than a trained classifier — it can occasionally misroute an ambiguous question.
-- Uploaded/edited data is kept in server memory only and resets when the app restarts.
-- Financial rates, tax rules, and scheme limits mentioned conceptually in the knowledge base should be verified from current authoritative sources — they are intentionally not hardcoded as fixed numbers.
+For frontend contribution notes, see [frontend/README.md](frontend/README.md).
