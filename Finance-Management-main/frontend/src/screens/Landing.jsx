@@ -1,12 +1,11 @@
 import React from 'react'
-import { TrendingUp, Zap, BarChart2, DollarSign, ArrowRight } from 'lucide-react'
+import { BarChart2, Target, Wallet, ArrowRight } from 'lucide-react'
 import { useApp } from '../App'
 
 const FEATURES = [
-  { icon: BarChart2, title: 'Real Analytics', desc: 'Category spending, savings rate, and monthly cashflow trends in interactive charts.' },
-  { icon: Zap, title: 'FinTrack Assistant', desc: 'Ask anything about your finances. Powered by Gemini AI with deterministic Python tools.' },
-  { icon: DollarSign, title: 'Budget & Goal Planners', desc: 'Set targets per category and calculate your path to savings milestones.' },
-  { icon: TrendingUp, title: 'EMI & SIP Calculators', desc: 'Reducing-balance EMI, SIP compound growth, and live currency converter.' },
+  { icon: Wallet, title: 'Track your money', desc: 'Keep income and expenses organized in one clear view.' },
+  { icon: BarChart2, title: 'Understand your spending', desc: 'See where your money goes with simple monthly summaries.' },
+  { icon: Target, title: 'Plan what matters', desc: 'Set budgets and savings goals that work for you.' },
 ]
 
 export default function Landing() {
@@ -17,31 +16,25 @@ export default function Landing() {
       <nav className="landing-nav">
         <span className="landing-brand">Fin<em>Track</em></span>
         <div className="landing-nav-actions">
-          <button className="btn-ghost" onClick={() => setScreen('auth')}>Log In</button>
-          <button className="btn-primary" onClick={() => setScreen('auth')}>Get started</button>
+          <button className="btn-ghost" onClick={() => setScreen('auth')}>Sign in</button>
+          <button className="btn-primary" onClick={() => setScreen('auth')}>Create account</button>
         </div>
       </nav>
 
       <section className="landing-hero">
-        <div>
-          <span className="landing-eyebrow">✦ Smart personal finance</span>
-          <h1>Accelerate your <span className="accent">financial clarity.</span></h1>
-          <p>Track income and expenses, set monthly budgets, monitor trends, and converse with an intelligent AI assistant grounded in your real financial data.</p>
+        <div className="landing-copy">
+          <span className="landing-eyebrow">PERSONAL FINANCE, MADE CLEAR</span>
+          <h1>A clearer view of <span className="accent">your money.</span></h1>
+          <p>Track spending, understand your habits, and plan your next steps—all in one place.</p>
           <div className="landing-hero-actions">
-            <button className="btn-primary" style={{ padding: '12px 28px', fontSize: 15 }} onClick={() => setScreen('auth')}>
-              Get Started Free
-              <ArrowRight size={16} style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 6 }} />
+            <button className="btn-primary" onClick={() => setScreen('auth')}>
+              Get started <ArrowRight size={16} />
             </button>
-          </div>
-          <div className="landing-stats">
-            <div className="landing-stat"><strong>100%</strong><span>Grounded data</span></div>
-            <div className="landing-stat"><strong>₹0</strong><span>Free & private</span></div>
-            <div className="landing-stat"><strong>AI</strong><span>Gemini + RAG</span></div>
           </div>
         </div>
 
         <div className="landing-visual">
-          <div className="wallet-scene" role="img" aria-label="An animated wallet tossing coins">
+          <div className="wallet-scene" role="img" aria-label="A FinTrack wallet with coins">
             <div className="wallet-orbit wallet-orbit-one" />
             <div className="wallet-orbit wallet-orbit-two" />
             <span className="wallet-coin coin-one">₹</span>
@@ -59,32 +52,16 @@ export default function Landing() {
             </div>
             <div className="wallet-caption"><strong>Money in motion</strong><span>Every choice adds up.</span></div>
           </div>
-          <div className="landing-float-row">
-            <div className="float-card">
-              <div className="float-card-dot" style={{ background: 'var(--green)' }} />
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>↑ Monthly Income</div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>₹50,000</div>
-              </div>
-            </div>
-            <div className="float-card">
-              <div className="float-card-dot" style={{ background: 'var(--accent)' }} />
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>↓ Savings Rate</div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>24.5%</div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section className="landing-features">
-        {FEATURES.map(f => (
-          <div className="feature-card" key={f.title}>
-            <div className="feature-icon"><f.icon size={20} /></div>
-            <h3>{f.title}</h3>
-            <p>{f.desc}</p>
-          </div>
+      <section className="landing-features" aria-label="FinTrack features">
+        {FEATURES.map(({ icon: Icon, title, desc }) => (
+          <article className="feature-card" key={title}>
+            <div className="feature-icon"><Icon size={20} /></div>
+            <h3>{title}</h3>
+            <p>{desc}</p>
+          </article>
         ))}
       </section>
     </div>

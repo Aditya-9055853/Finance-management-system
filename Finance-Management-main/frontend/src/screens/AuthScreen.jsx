@@ -171,7 +171,6 @@ export default function AuthScreen() {
             <a href="#" onClick={event => { event.preventDefault(); setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setNotice('') }}>{mode === 'login' ? 'Sign up' : 'Sign in'}</a>
           </p>}
 
-          <p className="auth-security-note">Email verification is handled securely by Firebase. Never share your banking PIN or OTP.</p>
           <button className="auth-back-button" onClick={() => setScreen('landing')}>← Back to home</button>
         </div>
       </section>

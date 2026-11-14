@@ -2,7 +2,7 @@ const apiKey = import.meta.env.VITE_FIREBASE_API_KEY
 const identityToolkitUrl = 'https://identitytoolkit.googleapis.com/v1/accounts'
 
 function requireFirebaseConfig() {
-  if (!apiKey) throw new Error('Firebase is not configured yet. Add VITE_FIREBASE_API_KEY in Render and rebuild.')
+  if (!apiKey) throw new Error('Account setup is temporarily unavailable. Please try again later.')
 }
 
 async function firebaseRequest(method, body) {
@@ -68,6 +68,6 @@ export async function openFinTrackSession(idToken) {
     body: JSON.stringify({ idToken }),
   })
   const data = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(data.error || 'Could not start your FinTrack session.')
+  if (!response.ok) throw new Error('Could not sign in right now. Please try again later.')
   return data.user
 }

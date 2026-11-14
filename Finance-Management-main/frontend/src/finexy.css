@@ -1496,6 +1496,102 @@
 [data-theme="dark"] .auth-link-button { color: #9dc5a4; }
 [data-theme="dark"] .auth-link-button.muted, [data-theme="dark"] .auth-back-button { color: #9aa79c; }
 
+/* Keep the public landing and auth screens on the same palette as the app. */
+.landing {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.landing-nav {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.landing-brand em,
+.landing-hero h1 .accent { color: var(--accent); }
+.landing-eyebrow {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-color: var(--border);
+}
+.landing-hero > div > p { color: var(--text-secondary); }
+.landing-hero-actions .btn-primary,
+.landing-nav .btn-primary {
+  background: var(--accent-grad);
+  box-shadow: none;
+}
+.landing-hero-actions .btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 11px; font-size: 14px; }
+.landing-nav .btn-ghost { color: var(--text-primary); }
+.landing-visual { min-height: 350px; }
+.wallet-scene { transform: scale(.88); }
+.wallet-orbit { border-color: color-mix(in srgb, var(--accent) 20%, transparent); }
+.wallet-orbit-two { border-color: color-mix(in srgb, var(--accent) 26%, transparent); }
+.wallet-shadow { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.wallet-back { background: linear-gradient(145deg, #53876a, #315f48); box-shadow: 0 24px 44px color-mix(in srgb, var(--accent) 24%, transparent); }
+.wallet-body { background: linear-gradient(145deg, #477c5f 0%, #315f48 68%, #274634 100%); box-shadow: inset 0 1px rgba(255,255,255,.3), inset 0 -12px 24px rgba(13,32,24,.18), 0 27px 45px color-mix(in srgb, var(--accent) 25%, transparent); }
+.wallet-caption strong { color: var(--text-primary); }
+.wallet-caption span { color: var(--text-secondary); }
+.landing-features { padding-bottom: 42px; }
+.landing-features .feature-card { border-color: var(--border); background: var(--bg-card); box-shadow: var(--shadow-sm); }
+.landing-features .feature-icon { color: var(--accent); background: var(--accent-dim); }
+.landing-features .feature-card h3 { color: var(--text-primary); }
+.landing-features .feature-card p { color: var(--text-secondary); }
+
+.auth-screen,
+.auth-form-side { background: var(--bg-primary); color: var(--text-primary); }
+.auth-illustration { background: var(--bg-secondary); border-color: var(--border); }
+.auth-scene-copy h1 { color: var(--text-primary); }
+.auth-scene-copy h1 em,
+.auth-scene-kicker { color: var(--accent); }
+.auth-scene-copy p,
+.auth-illustration-footer { color: var(--text-secondary); }
+.auth-form-wrap { border-color: var(--border); background: var(--bg-card); box-shadow: var(--shadow-sm); }
+.auth-form-wrap h2 { color: var(--text-primary); }
+.auth-form-wrap > p { color: var(--text-secondary); }
+.auth-logo-icon { background: var(--accent-grad); }
+.auth-logo-name em,
+.auth-switch a,
+.auth-password-toggle,
+.auth-link-button,
+.auth-back-button { color: var(--accent); }
+.auth-form-group label { color: var(--text-secondary); }
+.auth-form-group input {
+  border-color: var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.auth-form-group input:focus { border-color: var(--accent); background: var(--bg-card); box-shadow: 0 0 0 3px var(--accent-dim); }
+.auth-form-group input:-webkit-autofill,
+.auth-form-group input:-webkit-autofill:hover,
+.auth-form-group input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-primary) inset !important;
+  caret-color: var(--text-primary);
+}
+.auth-form-wrap form .btn-primary { background: var(--accent-grad); box-shadow: none; }
+.auth-form-wrap form .btn-primary:hover { filter: brightness(1.08); }
+.auth-notice { border-color: var(--border); background: var(--accent-dim); color: var(--text-primary); }
+.auth-verification-actions .auth-link-button.muted,
+.auth-form-wrap .auth-back-button { color: var(--text-muted); }
+.auth-form-wrap .auth-back-button:hover,
+.auth-verification-actions .auth-link-button:hover { color: var(--accent); }
+.login-intro { background: var(--bg-primary); }
+.login-intro-halo { background: radial-gradient(circle, var(--accent-dim), transparent 70%); }
+.login-intro-kicker,
+.login-intro-title span { color: var(--accent-light); border-color: var(--accent-light); }
+.login-intro-subtitle { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .auth-screen { background: var(--bg-primary); }
+  .auth-illustration { min-height: 220px; height: auto; max-height: none; }
+  .auth-form-side { min-height: 0; }
+}
+@media (max-width: 600px) {
+  .landing-hero { padding-top: 34px; }
+  .landing-visual { min-height: 265px; }
+  .wallet-scene { transform: scale(.72); }
+  .landing-features { padding-left: 20px; padding-right: 20px; }
+  .auth-form-wrap { padding: 25px 22px; }
+}
+
 @media (max-width: 1120px) {
   .dashboard-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .dashboard-clean .balance-card { grid-column: 1 / -1; min-height: 132px; }
