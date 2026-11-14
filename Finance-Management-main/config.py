@@ -16,12 +16,16 @@ class Config:
     AUTONOMOUS_CHECK_MINUTES = int(os.environ.get("AUTONOMOUS_CHECK_MINUTES", "30"))
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+    # Set DATA_DIR to a persistent mounted directory on a hosting provider.
+    DATA_DIR = os.environ.get("DATA_DIR", BASE_DIR)
+    os.makedirs(DATA_DIR, exist_ok=True)
+    UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     SAMPLE_CSV_PATH = os.path.join(BASE_DIR, "data", "sample_transactions.csv")
     KNOWLEDGE_BASE_PATH = os.path.join(BASE_DIR, "data", "finance_knowledge.md")
 
     # SQLite database file (created automatically on first run)
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(BASE_DIR, "finai.db"))
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(DATA_DIR, "finai.db"))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     ALLOWED_EXTENSIONS = {"csv"}
