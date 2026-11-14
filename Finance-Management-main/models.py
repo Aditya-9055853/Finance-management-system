@@ -21,7 +21,6 @@ class User(db.Model):
     name = db.Column(db.String(80), nullable=False, default="Guest")
     email = db.Column(db.String(120), unique=True, nullable=True)      # NULL for guests
     password_hash = db.Column(db.String(255), nullable=True)           # NULL for guests
-    firebase_uid = db.Column(db.String(128), unique=True, nullable=True, index=True)
     is_guest = db.Column(db.Boolean, nullable=False, default=False)
     email_verified = db.Column(db.Boolean, nullable=False, default=False)
     # Where the current data came from: "empty" | "uploaded" | "manual"

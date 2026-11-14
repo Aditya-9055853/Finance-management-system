@@ -55,9 +55,6 @@ Copy `.env.example` to `.env` and set values as needed:
 | --- | --- | --- |
 | `FLASK_SECRET_KEY` | Signs browser session cookies. Set a long, random value for production. | Development-only fallback |
 | `GEMINI_API_KEY` | Enables Gemini assistant responses. Keep this server-side. | Empty (fallback chat mode) |
-| `VITE_FIREBASE_API_KEY` | Firebase web API key used by the browser auth flow. | Required |
-| `FIREBASE_PROJECT_ID` | Firebase project ID used to verify sign-in tokens. | Required |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | Private Firebase Admin service account JSON; keep this secret. | Required on server |
 | `GEMINI_MODEL` | Gemini text model | `gemini-3.6-flash` |
 | `EMBEDDING_MODEL` | Gemini embedding model | `gemini-embedding-001` |
 | `AUTONOMOUS_CHECK_MINUTES` | Background monitor interval | `30` |
@@ -67,22 +64,11 @@ Copy `.env.example` to `.env` and set values as needed:
 
 Never commit `.env` or place API keys in frontend code. Without a Gemini key, dashboard and finance tools still work and chat uses its fallback response.
 
-### Email verification setup
+### Sign-in
 
-New users create an account with an email and password, then click the verification link Firebase sends before FinTrack grants access. Firebase handles password storage and email delivery; Flask verifies Firebase ID tokens before creating the app session. Existing local accounts can keep their finance records: create a Firebase account with the same email, verify it, and sign in to link that account.
+Users create an account with an email address and password, then sign in to use the finance features. Passwords are stored as one-way hashes. Email ownership is not verified in this version, so add an email verification provider before using this app for a public financial service.
 
-### Firebase setup (free Spark plan)
-
-1. Create a Firebase project and open **Authentication → Sign-in method**. Enable **Email/Password**.
-2. In **Authentication → Settings → Authorized domains**, add the Render hostname (for example, `finai-ieb8.onrender.com`) and `localhost` for local development.
-3. Register a Web App in Firebase project settings and copy its **Web API key** and **Project ID**.
-4. In **Project settings → Service accounts**, create a private key. Copy the complete JSON securely; never commit it or put it in frontend code.
-5. Set `VITE_FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID`, and `FIREBASE_SERVICE_ACCOUNT_JSON` in Render's service **Environment** settings. For local work, place them in the root `.env` file (copy `.env.example`) and restart the backend/build.
-6. Redeploy. A new signup should receive a Firebase verification link. The browser returns to the app after verification; the user then signs in with the same password.
-
-The Firebase web API key is intended to be public, but restrict it to the Identity Toolkit API in Google Cloud if desired. The service account JSON is a private server credential and must remain secret. Firebase Spark includes a free allowance for address verification emails; check Firebase's current [Authentication limits](https://firebase.google.com/docs/auth/limits).
-
-Guest access is disabled so an unverified visitor cannot use transaction or budget features. Each verified account sees its own finance data.
+Guest access is disabled. Each signed-in account sees only records associated with its user ID.
 
 ## Deploy to Render
 
@@ -90,7 +76,7 @@ The repository includes a `render.yaml` Blueprint at its top level. It builds th
 
 1. Push the repository to GitHub.
 2. In Render, choose **New → Blueprint**, connect the repository, and apply `render.yaml`.
-3. In the service's environment settings, add `GEMINI_API_KEY` if Gemini chat is needed, plus the Firebase values described above.
+3. In the service's environment settings, add `GEMINI_API_KEY` if Gemini chat is needed.
 4. Wait for the first build and open the public service URL Render provides.
 5. Enable Auto-Deploy for the chosen branch if you want pushes to deploy automatically.
 

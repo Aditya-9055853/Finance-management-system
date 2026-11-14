@@ -56,11 +56,11 @@ export default function App() {
   const [activeView, setActiveView] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [theme, setThemeState] = useState(() => {
-    try { return localStorage.getItem('fintrack-theme') === 'light' ? 'light' : 'dark' } catch { return 'dark' }
+    try { return localStorage.getItem('fintrack-theme-v2') === 'dark' ? 'dark' : 'light' } catch { return 'light' }
   })
   const setTheme = useCallback((t) => {
     setThemeState(t)
-    try { localStorage.setItem('fintrack-theme', t) } catch {}
+    try { localStorage.setItem('fintrack-theme-v2', t) } catch {}
   }, [])
   const [user, setUser] = useState(null)
   const [welcomeSlogan, setWelcomeSlogan] = useState(() => {

@@ -12,9 +12,6 @@ class Config:
     GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
     EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "gemini-embedding-001")
 
-    FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "").strip()
-    FIREBASE_SERVICE_ACCOUNT_JSON = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
-
     # How often the autonomous monitor re-checks budgets/health in the background.
     AUTONOMOUS_CHECK_MINUTES = int(os.environ.get("AUTONOMOUS_CHECK_MINUTES", "30"))
 

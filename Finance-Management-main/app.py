@@ -4,15 +4,12 @@ Flask backend: API routes, SQLite storage, auth, and wiring together the agent, 
 """
 import os
 import traceback
-import json
 from functools import wraps
 
 import pandas as pd
 from flask import Flask, request, jsonify, render_template, session, send_file, send_from_directory
 from flask_cors import CORS
 from sqlalchemy import inspect, text
-import firebase_admin
-from firebase_admin import auth as firebase_auth, credentials
 
 from config import Config
 from models import db, User, Transaction, Budget
@@ -44,11 +41,6 @@ with app.app_context():
     if "email_verified" not in user_columns:
         with db.engine.begin() as connection:
             connection.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT FALSE"))
-    if "firebase_uid" not in user_columns:
-        with db.engine.begin() as connection:
-            connection.execute(text("ALTER TABLE users ADD COLUMN firebase_uid VARCHAR(128)"))
-    with db.engine.begin() as connection:
-        connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_firebase_uid ON users (firebase_uid)"))
 
 # ---------------------------------------------------------------------------
 # Startup: Gemini client, then RAG index (embeddings need the client), then
@@ -88,29 +80,13 @@ agent = FinanceAgent(rag_engine=rag_engine, gemini_client=gemini_client, gemini_
 LAST_ACTIVE = {"uid": None}
 
 
-def _firebase_app():
-    """Initialize the Admin SDK only when its server-side credential is configured."""
-    try:
-        return firebase_admin.get_app("fintrack")
-    except ValueError:
-        if not Config.FIREBASE_SERVICE_ACCOUNT_JSON:
-            return None
-        service_account = json.loads(Config.FIREBASE_SERVICE_ACCOUNT_JSON)
-        project_id = Config.FIREBASE_PROJECT_ID or service_account.get("project_id")
-        return firebase_admin.initialize_app(
-            credentials.Certificate(service_account),
-            {"projectId": project_id},
-            name="fintrack",
-        )
-
-
-def _verified_login_required(view):
+def _login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         uid = session.get("uid")
         user = db.session.get(User, uid) if uid else None
-        if user is None or user.is_guest or not user.email_verified:
-            return jsonify({"error": "Sign in with a verified email account to continue."}), 401
+        if user is None or user.is_guest:
+            return jsonify({"error": "Please sign in to continue."}), 401
         LAST_ACTIVE["uid"] = user.id
         return view(*args, **kwargs)
     return wrapped
@@ -272,52 +248,49 @@ def frontend_assets(frontend_path):
 # Routes — auth
 # ---------------------------------------------------------------------------
 
-@app.route("/api/session", methods=["POST"])
-def create_session():
-    """Exchange a verified Firebase ID token for this app's secure session."""
-    payload = request.get_json(silent=True) or {}
-    id_token = str(payload.get("idToken", ""))
-    if not id_token:
-        return jsonify({"error": "A Firebase sign-in token is required."}), 400
+@app.route("/api/register", methods=["POST"])
+def register():
     try:
-        firebase = _firebase_app()
-    except Exception:
-        traceback.print_exc()
-        return jsonify({"error": "Firebase server credentials are invalid. Check the Render environment settings."}), 503
-    if firebase is None:
-        return jsonify({"error": "Firebase server authentication is not configured."}), 503
-    try:
-        claims = firebase_auth.verify_id_token(id_token, app=firebase, check_revoked=True)
-        email = str(claims.get("email", "")).strip().lower()
-        firebase_uid = claims.get("uid")
-        if not claims.get("email_verified") or not email or not firebase_uid:
-            return jsonify({"error": "Verify your email using the link Firebase sent, then sign in again."}), 403
+        payload = request.get_json(silent=True) or {}
+        name = str(payload.get("name", "")).strip()
+        email = str(payload.get("email", "")).strip().lower()
+        password = str(payload.get("password", ""))
+        if not name:
+            return jsonify({"error": "Enter your name."}), 400
+        if "@" not in email or "." not in email.rsplit("@", 1)[-1]:
+            return jsonify({"error": "Enter a valid email address."}), 400
+        if len(password) < 8:
+            return jsonify({"error": "Use a password with at least 8 characters."}), 400
+        if User.query.filter_by(email=email).first():
+            return jsonify({"error": "An account with this email already exists. Sign in instead."}), 409
 
-        user = User.query.filter_by(firebase_uid=firebase_uid).first()
-        if user is None:
-            # Preserve existing finance data when accounts migrate to Firebase Auth.
-            user = User.query.filter_by(email=email).first()
-        if user is None:
-            user = User(name=str(claims.get("name") or email.split("@", 1)[0])[:80], email=email)
-            db.session.add(user)
-        elif user.firebase_uid and user.firebase_uid != firebase_uid:
-            return jsonify({"error": "This email is linked to a different sign-in account."}), 409
-
-        user.firebase_uid = firebase_uid
-        user.email = email
-        user.email_verified = True
-        user.is_guest = False
-        if claims.get("name"):
-            user.name = str(claims["name"])[:80]
+        user = User(name=name[:80], email=email, is_guest=False)
+        user.set_password(password)
+        db.session.add(user)
         db.session.commit()
         session.clear()
         session["uid"] = user.id
         session.permanent = True
-        return jsonify({"message": "Signed in.", "user": user.to_public()})
+        return jsonify({"message": "Account created.", "user": user.to_public()}), 201
     except Exception:
         db.session.rollback()
         traceback.print_exc()
-        return jsonify({"error": "Firebase could not validate this sign-in. Please try again."}), 401
+        return jsonify({"error": "Could not create the account. Please try again."}), 500
+
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    payload = request.get_json(silent=True) or {}
+    email = str(payload.get("email", "")).strip().lower()
+    password = str(payload.get("password", ""))
+    user = User.query.filter_by(email=email).first()
+    if user is None or not user.check_password(password):
+        return jsonify({"error": "Email or password is incorrect."}), 401
+    session.clear()
+    session["uid"] = user.id
+    session.permanent = True
+    db.session.commit()
+    return jsonify({"message": "Signed in.", "user": user.to_public()})
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
@@ -331,7 +304,7 @@ def me():
     """Who is logged in? Used by the frontend to restore the session on refresh."""
     uid = session.get("uid")
     user = db.session.get(User, uid) if uid else None
-    if user is None or user.is_guest or not user.email_verified:
+    if user is None or user.is_guest:
         session.pop("uid", None)
         return jsonify({"user": None})
     return jsonify({"user": user.to_public()})
@@ -342,7 +315,7 @@ def me():
 # ---------------------------------------------------------------------------
 
 @app.route("/api/upload", methods=["POST"])
-@_verified_login_required
+@_login_required
 def upload_csv():
     try:
         user = _current_user()
@@ -400,7 +373,7 @@ def upload_csv():
 
 
 @app.route("/api/import-bank-statement", methods=["POST"])
-@_verified_login_required
+@_login_required
 def import_bank_statement():
     """Append transactions from a common bank statement CSV format."""
     try:
@@ -511,7 +484,7 @@ def import_bank_statement():
 
 
 @app.route("/api/clear-data", methods=["POST"])
-@_verified_login_required
+@_login_required
 def clear_data():
     try:
         user = _current_user()
@@ -541,7 +514,7 @@ def download_sample():
 
 
 @app.route("/api/summary", methods=["GET"])
-@_verified_login_required
+@_login_required
 def summary():
     user = _current_user(create=False)
     df = _df_for(user)
@@ -560,7 +533,7 @@ def summary():
 
 
 @app.route("/api/transactions", methods=["GET"])
-@_verified_login_required
+@_login_required
 def transactions():
     df = _df_for(_current_user(create=False))
     if df.empty:
@@ -572,7 +545,7 @@ def transactions():
 
 
 @app.route("/api/transactions", methods=["POST"])
-@_verified_login_required
+@_login_required
 def add_transaction():
     try:
         user = _current_user()
@@ -642,7 +615,7 @@ def add_transaction():
 
 
 @app.route("/api/transactions/<int:txn_id>", methods=["DELETE"])
-@_verified_login_required
+@_login_required
 def delete_transaction(txn_id):
     try:
         user = _current_user(create=False)
@@ -663,7 +636,7 @@ def delete_transaction(txn_id):
 
 
 @app.route("/api/categories", methods=["GET"])
-@_verified_login_required
+@_login_required
 def categories():
     df = _df_for(_current_user(create=False))
     if df.empty:
@@ -672,7 +645,7 @@ def categories():
 
 
 @app.route("/api/monthly-summary", methods=["GET"])
-@_verified_login_required
+@_login_required
 def monthly_summary():
     df = _df_for(_current_user(create=False))
     if df.empty:
@@ -681,7 +654,7 @@ def monthly_summary():
 
 
 @app.route("/api/budget", methods=["GET"])
-@_verified_login_required
+@_login_required
 def get_budgets():
     """Budgets the user saved earlier (so they survive refresh/restart)."""
     user = _current_user(create=False)
@@ -689,7 +662,7 @@ def get_budgets():
 
 
 @app.route("/api/budget", methods=["POST"])
-@_verified_login_required
+@_login_required
 def budget_status():
     try:
         from tools import budget_tools
@@ -718,7 +691,7 @@ def budget_status():
 
 
 @app.route("/api/goal", methods=["POST"])
-@_verified_login_required
+@_login_required
 def goal_endpoint():
     try:
         df = _df_for(_current_user(create=False))
@@ -742,7 +715,7 @@ def goal_endpoint():
 
 
 @app.route("/api/chat", methods=["POST"])
-@_verified_login_required
+@_login_required
 def chat():
     try:
         user = _current_user(create=False)
@@ -777,7 +750,7 @@ def chat():
 
 
 @app.route("/api/clear-chat", methods=["POST"])
-@_verified_login_required
+@_login_required
 def clear_chat():
     session["chat_history"] = []
     return jsonify({"message": "Chat history cleared."})
@@ -797,7 +770,7 @@ def status():
 
 
 @app.route("/api/alerts", methods=["GET"])
-@_verified_login_required
+@_login_required
 def alerts():
     """Alerts the autonomous monitor raised on its own, in the background —
     the frontend can poll this to show a notification without the user
@@ -809,7 +782,7 @@ def alerts():
 
 
 @app.route("/api/alerts/dismiss", methods=["POST"])
-@_verified_login_required
+@_login_required
 def dismiss_alerts():
     monitor.latest_alerts = []
     return jsonify({"message": "Alerts cleared."})
