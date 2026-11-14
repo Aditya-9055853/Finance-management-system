@@ -1,7 +1,7 @@
 """
-Tool registry for the autonomous FinAI agent.
+Tool registry for the autonomous FinTrack agent.
 
-This is what turns FinAI from "regex guesses intent -> Gemini writes the
+This is what turns FinTrack from "regex guesses intent -> Gemini writes the
 sentence" into a real agent: Gemini itself sees this list of tools and
 decides which ones to call and with what arguments, for as many rounds as
 it needs, before writing a final answer.
@@ -196,7 +196,7 @@ TOOL_REGISTRY: Dict[str, Dict[str, Any]] = {
     },
     "search_finance_knowledge": {
         "fn": _rag_search,
-        "description": "Semantic search over FinAI's finance knowledge base (SIP, EMI, credit scores, "
+        "description": "Semantic search over FinTrack's finance knowledge base (SIP, EMI, credit scores, "
                         "tax concepts, etc). Call this for conceptual/educational finance questions that "
                         "are NOT about the user's own transactions.",
         "parameters": {

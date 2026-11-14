@@ -1,5 +1,5 @@
 """
-RAG (Retrieval-Augmented Generation) engine for FinAI.
+RAG (Retrieval-Augmented Generation) engine for FinTrack.
 
 Two retrieval backends, chosen automatically:
   - "embedding" : Gemini text-embedding model (semantic search). Used whenever

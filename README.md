@@ -1,4 +1,4 @@
-# FinAI Finance Management
+# FinTrack Finance Management
 
 A full-stack personal finance dashboard with a React interface and Flask API. The backend includes account sessions, transaction and budget storage, CSV imports, financial summaries, and an optional Gemini-powered assistant.
 

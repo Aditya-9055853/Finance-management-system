@@ -1,69 +1,37 @@
-# FinAI — React Frontend
+# FinTrack frontend
 
-## 🚀 Running the Full Stack
+React 19 and Vite frontend for FinTrack. In production, Vite's `dist/` build is served by the Flask app at the repository root. For full installation, deployment, and environment configuration, see the [main project README](../README.md).
 
-You need **two terminals**:
+## Development
 
-### Terminal 1 — Flask Backend (port 5000)
-```bash
-cd e:\FinAI
+Start the Flask backend from the project root in one terminal:
+
+```powershell
 python run.py
 ```
 
-### Terminal 2 — React Dev Server (port 5173)
-```bash
-cd e:\FinAI\frontend
+Then run Vite from this directory in another terminal:
+
+```powershell
+npm ci
 npm run dev
 ```
 
-Then open: **http://localhost:5173**
+Open <http://localhost:5173>. The Vite dev server proxies `/api` calls to Flask at `http://localhost:5000`.
 
----
+## Build and preview
 
-## 📦 Build for Production
-
-```bash
-cd e:\FinAI\frontend
+```powershell
+npm ci
 npm run build
+npm run preview
 ```
 
-The build output goes to `frontend/dist/`. You can serve it with any static file server, or configure Flask to serve it.
+The production build is written to `dist/`. For the deployed app, rebuild with `npm run build` and let Flask serve that directory. Push code changes and redeploy the hosting service for users to receive updates; the Vite development server is for local development only.
 
----
+## Scripts
 
-## 🗂 Project Structure
-
-```
-frontend/
-├── src/
-│   ├── App.jsx           # Root app with context & routing
-│   ├── App.css           # All component styles
-│   ├── index.css         # Global CSS variables & base
-│   ├── components/
-│   │   ├── Sidebar.jsx   # Left navigation sidebar
-│   │   ├── Topbar.jsx    # Top navigation bar
-│   │   ├── Toast.jsx     # Toast notifications
-│   │   └── UploadModal.jsx # CSV upload modal
-│   ├── screens/
-│   │   ├── Landing.jsx   # Landing/marketing page
-│   │   └── AuthScreen.jsx # Login/signup
-│   └── views/
-│       ├── Dashboard.jsx    # KPIs, charts, transactions
-│       ├── ChatView.jsx     # AI Assistant chat
-│       ├── Transactions.jsx # Full transaction CRUD
-│       ├── Analytics.jsx    # Deep analytics charts
-│       ├── BudgetPlanner.jsx
-│       ├── SavingsGoal.jsx
-│       ├── LoanEMI.jsx
-│       ├── Investment.jsx
-│       ├── CurrencyConverter.jsx
-│       └── AIInsights.jsx
-└── vite.config.js        # Proxies /api to localhost:5000
-```
-
-## 🎨 Design System
-
-- **Dark theme** with CSS variables in `index.css`
-- **Orange accent** (`#e8621a`) inspired by the dashboard screenshot
-- **Card-based** layout with subtle borders and hover effects
-- **Responsive** grid system for all screen sizes
+- `npm run dev` — local Vite development server
+- `npm run build` — optimized production assets
+- `npm run preview` — serve the production build locally
+- `npm run lint` — run Oxlint

@@ -1,5 +1,5 @@
 """
-Central configuration for FinAI.
+Central configuration for FinTrack.
 Loads environment variables and defines app-wide constants.
 """
 import os

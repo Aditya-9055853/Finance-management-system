@@ -1,5 +1,5 @@
 """
-Autonomous monitor — the part of FinAI that acts without being asked.
+Autonomous monitor — the part of FinTrack that acts without being asked.
 
 Every AUTONOMOUS_CHECK_MINUTES, this checks the currently loaded transaction
 data against saved budgets and the financial health score, and — only when

@@ -1,5 +1,5 @@
 """
-FinAI — Intelligent Personal Finance Assistant
+FinTrack — Intelligent Personal Finance Assistant
 Flask backend: API routes, SQLite storage, auth, and wiring together the agent, tools, and RAG engine.
 """
 import os
@@ -21,11 +21,16 @@ from tools import goal_tools as goal_tools_mod
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "finai-dev-secret-change-me")
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "false").lower() in ("1", "true", "yes"),
+)
 CORS(app, supports_credentials=True)
 FRONTEND_DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "dist")
 
 # ---------------------------------------------------------------------------
-# Database (SQLite): created automatically on first run -> FinAI/finai.db
+# Database (SQLite): created automatically on first run -> FinTrack/finai.db
 # ---------------------------------------------------------------------------
 
 db.init_app(app)
@@ -44,21 +49,21 @@ if Config.GEMINI_API_KEY:
         from google import genai
         gemini_client = genai.Client(api_key=Config.GEMINI_API_KEY)
         gemini_status = "configured"
-        print("[FinAI] Gemini client initialized.")
+        print("[FinTrack] Gemini client initialized.")
     except Exception as e:
         gemini_status = f"error: {e}"
-        print(f"[FinAI] WARNING: Gemini client failed to initialize: {e}")
+        print(f"[FinTrack] WARNING: Gemini client failed to initialize: {e}")
 else:
-    print("[FinAI] WARNING: GEMINI_API_KEY not set. Chat will use fallback (non-AI) responses "
+    print("[FinTrack] WARNING: GEMINI_API_KEY not set. Chat will use fallback (non-AI) responses "
           "until you add a key to .env.")
 
-print("[FinAI] Building RAG index from knowledge base...")
+print("[FinTrack] Building RAG index from knowledge base...")
 rag_engine = RAGEngine(
     Config.KNOWLEDGE_BASE_PATH,
     gemini_client=gemini_client,
     embedding_model=Config.EMBEDDING_MODEL,
 )
-print(f"[FinAI] RAG index ready with {len(rag_engine.chunks)} chunks (backend: {rag_engine.backend}).")
+print(f"[FinTrack] RAG index ready with {len(rag_engine.chunks)} chunks (backend: {rag_engine.backend}).")
 
 agent = FinanceAgent(rag_engine=rag_engine, gemini_client=gemini_client, gemini_model=Config.GEMINI_MODEL)
 

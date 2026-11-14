@@ -1,5 +1,5 @@
 """
-FinanceAgent — the decision-making layer of FinAI.
+FinanceAgent — the decision-making layer of FinTrack.
 
 Given a user message, the agent:
   1. Classifies intent accurately (savings rate, recent transactions, category spending,
@@ -272,7 +272,7 @@ _RESTRICTED_PATTERNS = re.compile(
 )
 
 _RESTRICTED_REFUSAL = (
-    "🚫 I can't help with that. FinAI is a personal finance assistant, and I don't provide "
+    "🚫 I can't help with that. FinTrack is a personal finance assistant, and I don't provide "
     "information related to weapons, explosives, violence, terrorism, hacking, theft, or other "
     "unsafe or illegal activity — no matter how the question is phrased.\n\n"
     "I'm happy to help with anything about your income, expenses, budgeting, savings goals, "
@@ -349,7 +349,7 @@ class FinanceAgent:
         if intent["sample_data"]:
             return {
                 "answer": (
-                    "### 📄 Sample CSV Format for FinAI\n\n"
+                    "### 📄 Sample CSV Format for FinTrack\n\n"
                     "You can upload your own financial transactions CSV. It must contain these **5 columns**:\n\n"
                     "| Column | Type | Description | Example |\n"
                     "|---|---|---|---|\n"
@@ -379,7 +379,7 @@ class FinanceAgent:
         if intent["greeting"] and not intent["transaction"] and not intent["knowledge"]:
             return {
                 "answer": (
-                    "Hi! I'm **FinAI**, your personal finance assistant 👋\n\n"
+                    "Hi! I'm **FinTrack**, your personal finance assistant 👋\n\n"
                     "Here's what I can do for you:\n"
                     "- 📊 **Savings Rate** — Ask *'What is my savings rate?'*\n"
                     "- 📋 **Recent Transactions** — Ask *'Show my recent transactions'*\n"
@@ -399,7 +399,7 @@ class FinanceAgent:
         if intent["out_of_domain"]:
             return {
                 "answer": (
-                    "I'm FinAI, a personal finance assistant — I focus on your income, expenses, "
+                    "I'm FinTrack, a personal finance assistant — I focus on your income, expenses, "
                     "budgeting, savings goals, and financial education. I'm not able to help "
                     "with that topic, but feel free to ask me anything about your finances or transactions!"
                 ),
@@ -517,7 +517,7 @@ class FinanceAgent:
         if self.gemini_client:
             try:
                 system_instructions = (
-                    "You are FinAI, an expert, encouraging personal finance assistant for Indian users. "
+                    "You are FinTrack, an expert, encouraging personal finance assistant for Indian users. "
                     "You ONLY help with personal finance topics: the user's income/expenses/transactions, "
                     "budgeting, savings, savings goals, loans/EMI, investments, and general finance concepts "
                     "(e.g. SIP, credit score, inflation, tax basics).\n"
@@ -756,12 +756,12 @@ Answer the user directly and helpfully in markdown."""
                 lines.append(f"#### {r['title']}\n{r['text']}\n")
             return "\n".join(lines)
 
-        # 12. General / off-topic questions with no relevant RAG match — FinAI
+        # 12. General / off-topic questions with no relevant RAG match — FinTrack
         # is scoped to personal finance only, so this is a firm redirect,
         # not an attempt to answer from general knowledge.
         if intent.get("knowledge"):
             return (
-                "I'm FinAI, a personal finance assistant — I can only help with topics like your "
+                "I'm FinTrack, a personal finance assistant — I can only help with topics like your "
                 "income, expenses, budgeting, savings, savings goals, loans, or investments. "
                 "That question is outside what I can help with. Try asking me something "
                 "finance-related instead, like your savings rate or spending by category!"

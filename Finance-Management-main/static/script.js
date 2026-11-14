@@ -1,5 +1,5 @@
 /* ================================================================
-   FinAI — Complete Unified Frontend JavaScript
+   FinTrack — Complete Unified Frontend JavaScript
    Handles:
      - Multi-screen routing (Landing -> Auth -> App)
      - Sidebar navigation & mobile responsiveness
@@ -155,7 +155,7 @@ function setUser(user) {
   } else {
     localStorage.removeItem("finTrack_currentUser");
     document.getElementById("sidebar-user-name").textContent = "Guest User";
-    document.getElementById("sidebar-user-email").textContent = "guest@finai.local";
+    document.getElementById("sidebar-user-email").textContent = "guest@fintrack.local";
     document.getElementById("sidebar-avatar").textContent = "G";
   }
 }
@@ -168,11 +168,11 @@ document.getElementById("landing-hero-getstarted")?.addEventListener("click", ()
   document.getElementById("signup-form-wrap")?.classList.remove("hidden");
 });
 document.getElementById("landing-direct-app-btn")?.addEventListener("click", () => {
-  setUser({ name: "Demo User", email: "demo@finai.local" });
+  setUser({ name: "Demo User", email: "demo@fintrack.local" });
   showScreen("app");
 });
 document.getElementById("landing-hero-direct")?.addEventListener("click", () => {
-  setUser({ name: "Demo User", email: "demo@finai.local" });
+  setUser({ name: "Demo User", email: "demo@fintrack.local" });
   showScreen("app");
 });
 
@@ -192,11 +192,11 @@ document.getElementById("signup-back-btn")?.addEventListener("click", () => show
 
 // Guest launch buttons
 document.getElementById("login-guest-btn")?.addEventListener("click", () => {
-  setUser({ name: "Guest User", email: "guest@finai.local" });
+  setUser({ name: "Guest User", email: "guest@fintrack.local" });
   showScreen("app");
 });
 document.getElementById("signup-guest-btn")?.addEventListener("click", () => {
-  setUser({ name: "Guest User", email: "guest@finai.local" });
+  setUser({ name: "Guest User", email: "guest@fintrack.local" });
   showScreen("app");
 });
 
@@ -315,7 +315,7 @@ document.getElementById("topbar-add-quick-btn")?.addEventListener("click", () =>
 
 
 // ----------------------------------------------------------------
-// Data Loaders (Connected to FinAI Flask REST Endpoints)
+// Data Loaders (Connected to FinTrack Flask REST Endpoints)
 // ----------------------------------------------------------------
 async function loadStatus() {
   const s = await apiGet("/api/status");
@@ -957,7 +957,7 @@ async function sendChatMessage(query) {
     );
   } catch (err) {
     loading.remove();
-    appendChatMessage("assistant", "⚠️ Connection error. Please make sure the FinAI server is active.");
+    appendChatMessage("assistant", "⚠️ Connection error. Please make sure the FinTrack server is active.");
   } finally {
     isSendingChat = false;
     if (input) {

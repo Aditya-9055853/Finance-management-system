@@ -1,4 +1,4 @@
-# FinAI Financial Knowledge Base
+# FinTrack Financial Knowledge Base
 
 This document is an educational reference on personal finance concepts. It is written for general learning purposes and does not constitute personalized financial, investment, tax, or legal advice. Rates, limits, and rules mentioned for financial products can change over time — always verify current details from an official or authoritative source before making a decision.
 
@@ -65,7 +65,7 @@ Practical, commonly recommended methods for increasing savings include:
 - **Entertainment spending** — choosing lower-cost or free alternatives some of the time (home activities, free events) rather than always opting for the most expensive option.
 - **Planned purchases** — deciding on larger purchases in advance rather than spontaneously, and comparing prices before buying.
 - **Savings targets** — having a specific number and deadline (rather than a vague "save more") makes it easier to track progress and stay motivated.
-- **Expense tracking** — simply becoming aware of spending patterns, through an app, spreadsheet, or tool like FinAI, often naturally reduces unnecessary spending because it increases awareness.
+- **Expense tracking** — simply becoming aware of spending patterns, through an app, spreadsheet, or tool like FinTrack, often naturally reduces unnecessary spending because it increases awareness.
 
 ## Savings Rate and Financial Ratios
 

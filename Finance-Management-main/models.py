@@ -1,5 +1,5 @@
 """
-FinAI database models (SQLite via Flask-SQLAlchemy).
+FinTrack database models (SQLite via Flask-SQLAlchemy).
 
 Tables:
   users         - login accounts (and one hidden "guest" row per guest browser session)

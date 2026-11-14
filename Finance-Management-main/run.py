@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-FinAI — Run Script
-Starts the FinAI backend server and serves the complete frontend.
+FinTrack — Run Script
+Starts the FinTrack backend server and serves the complete frontend.
 
 Usage:
     python run.py
@@ -22,7 +22,7 @@ def open_browser(url: str, delay: float = 1.2):
 
 def main():
     print("=" * 65)
-    print("   FinAI — Intelligent Personal Finance Assistant & Dashboard")
+    print("   FinTrack — Intelligent Personal Finance Assistant & Dashboard")
     print("=" * 65)
 
     # Change working directory to this script's directory
@@ -34,7 +34,7 @@ def main():
         from app import app
         from config import Config
     except ImportError as e:
-        print(f"[FinAI Error] Failed to import app: {e}")
+        print(f"[FinTrack Error] Failed to import app: {e}")
         print("Make sure you are running with your Python environment and dependencies installed:")
         print("    pip install -r requirements.txt")
         sys.exit(1)
@@ -43,7 +43,7 @@ def main():
     host = os.environ.get("HOST", "127.0.0.1")
     url = f"http://{host}:{port}"
 
-    print(f"[*] Starting FinAI Server on: {url}")
+    print(f"[*] Starting FinTrack Server on: {url}")
     print(f"[*] Knowledge base path:     {Config.KNOWLEDGE_BASE_PATH}")
     print(f"[*] Sample data loaded:      {Config.SAMPLE_CSV_PATH}")
     gemini_key = os.environ.get("GEMINI_API_KEY", "")

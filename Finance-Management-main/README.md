@@ -1,6 +1,6 @@
-# FinAI — Intelligent Personal Finance Assistant
+# FinTrack — Intelligent Personal Finance Assistant
 
-FinAI is a full-stack finance dashboard. The React frontend is built with Vite and served by Flask; the Flask API stores user accounts, transactions, and budgets in SQLite. Gemini is optional and only called from the backend.
+FinTrack is a full-stack finance dashboard. The React frontend is built with Vite and served by Flask; the Flask API stores user accounts, transactions, and budgets in SQLite. Gemini is optional and only called from the backend.
 
 ## Features
 
